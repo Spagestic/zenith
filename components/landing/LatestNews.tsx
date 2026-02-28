@@ -4,12 +4,12 @@ import { Clock, ArrowRight } from "lucide-react";
 import { LATEST_ARTICLES } from "@/data";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  World: "text-blue-600 dark:text-blue-400",
-  Technology: "text-violet-600 dark:text-violet-400",
-  "Hong Kong": "text-rose-600 dark:text-rose-400",
-  Science: "text-emerald-600 dark:text-emerald-400",
-  Business: "text-amber-600 dark:text-amber-400",
-  Culture: "text-orange-600 dark:text-orange-400",
+  World: "text-primary",
+  Technology: "text-primary",
+  "Hong Kong": "text-primary",
+  Science: "text-primary",
+  Business: "text-primary",
+  Culture: "text-primary",
 };
 
 const CategoryPill = ({ label }: { label: string }) => (
