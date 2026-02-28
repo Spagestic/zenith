@@ -4,7 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { Volume2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-// Assuming you exported the array as SEED_ARTICLES from your data file
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { SEED_ARTICLES } from "@/data";
 
 // ── Helpers & Formatters ──────────────────────────────────────────────────────
@@ -66,10 +73,8 @@ const Meta = ({
 // ── Main component ────────────────────────────────────────────────────────────
 
 const HeroSection = () => {
-  // Safety check in case data is empty during development
   if (!SEED_ARTICLES || SEED_ARTICLES.length === 0) return null;
 
-  // Dynamically slice the articles based on the UI layout
   const featured = SEED_ARTICLES[0];
   const sideCards = SEED_ARTICLES.slice(1, 3);
   const wideCards = SEED_ARTICLES.slice(3, 5);
@@ -82,27 +87,33 @@ const HeroSection = () => {
         {featured && (
           <Link
             href={`/article/${featured.slug}`}
-            className="group lg:col-span-2 flex flex-col gap-4"
+            className="lg:col-span-2 group"
           >
-            <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
-              <Image
-                src={featured.imageUrl || "/placeholder.png"}
-                alt={featured.title}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                priority
-              />
-            </div>
+            <Card className="pt-0 overflow-hidden border-border transition-shadow hover:shadow-lg h-full">
+              <div className="relative aspect-video w-full overflow-hidden bg-muted">
+                <Image
+                  src={featured.imageUrl || "/placeholder.png"}
+                  alt={featured.title}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  priority
+                />
+              </div>
 
-            <div className="flex flex-col gap-2.5">
-              <CategoryPill category={featured.category} />
-              <h2 className="font-display text-2xl md:text-3xl font-bold leading-tight tracking-tight group-hover:text-muted-foreground transition-colors">
-                {featured.title}
-              </h2>
-              <p className="text-muted-foreground text-base leading-relaxed line-clamp-2">
-                {featured.kidSummary}
-              </p>
-              <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+              <CardHeader className="pb-2">
+                <CategoryPill category={featured.category} />
+                <CardTitle className="font-display text-2xl md:text-3xl font-bold leading-tight tracking-tight group-hover:text-muted-foreground transition-colors">
+                  {featured.title}
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent className="pb-2">
+                <CardDescription className="text-base leading-relaxed line-clamp-2">
+                  {featured.kidSummary}
+                </CardDescription>
+              </CardContent>
+
+              <CardFooter className="flex items-center justify-between flex-wrap gap-2">
                 <Meta
                   source={featured.sourceName}
                   publishedAt={featured.publishedAt}
@@ -120,38 +131,44 @@ const HeroSection = () => {
                   <Volume2 className="h-3 w-3" />
                   Listen
                 </Button>
-              </div>
-            </div>
+              </CardFooter>
+            </Card>
           </Link>
         )}
 
         {/* Side cards — stacked vertically in the 3rd col */}
-        <div className="flex flex-col gap-6 lg:border-l lg:border-border lg:pl-6">
+        <div className="flex flex-col gap-6">
           {sideCards.map((card) => (
             <Link
               key={card.slug}
               href={`/article/${card.slug}`}
-              className="group flex flex-col gap-3 flex-1"
+              className="group flex-1"
             >
-              <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border bg-muted">
-                <Image
-                  src={card.imageUrl || "/placeholder.png"}
-                  alt={card.title}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <CategoryPill category={card.category} />
-                <h3 className="font-display text-base font-semibold leading-snug group-hover:text-muted-foreground transition-colors line-clamp-2">
-                  {card.title}
-                </h3>
-                <Meta
-                  source={card.sourceName}
-                  publishedAt={card.publishedAt}
-                  readingTimeMinutes={card.readingTimeMinutes}
-                />
-              </div>
+              <Card className="pt-0 overflow-hidden border-border transition-shadow hover:shadow-lg h-full flex flex-col">
+                <div className="relative aspect-video w-full overflow-hidden bg-muted">
+                  <Image
+                    src={card.imageUrl || "/placeholder.png"}
+                    alt={card.title}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  />
+                </div>
+
+                <CardHeader className="pb-2 flex-1">
+                  <CategoryPill category={card.category} />
+                  <CardTitle className="font-display text-base font-semibold leading-snug group-hover:text-muted-foreground transition-colors line-clamp-2">
+                    {card.title}
+                  </CardTitle>
+                </CardHeader>
+
+                <CardFooter className="pt-0">
+                  <Meta
+                    source={card.sourceName}
+                    publishedAt={card.publishedAt}
+                    readingTimeMinutes={card.readingTimeMinutes}
+                  />
+                </CardFooter>
+              </Card>
             </Link>
           ))}
         </div>
@@ -166,33 +183,37 @@ const HeroSection = () => {
           <Link
             key={card.slug}
             href={`/article/${card.slug}`}
-            className="group flex flex-row gap-4 items-start"
+            className="group"
           >
-            {/* Thumbnail */}
-            <div className="relative w-36 shrink-0 aspect-video overflow-hidden rounded-lg border border-border bg-muted">
-              <Image
-                src={card.imageUrl || "/placeholder.png"}
-                alt={card.title}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-              />
-            </div>
+            <Card className="overflow-hidden border-border transition-shadow hover:shadow-lg h-full">
+              <CardContent className="flex flex-row gap-4 items-start p-4">
+                {/* Thumbnail */}
+                <div className="relative w-36 shrink-0 aspect-video overflow-hidden rounded-lg bg-muted">
+                  <Image
+                    src={card.imageUrl || "/placeholder.png"}
+                    alt={card.title}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  />
+                </div>
 
-            {/* Text */}
-            <div className="flex flex-col gap-2 min-w-0">
-              <CategoryPill category={card.category} />
-              <h3 className="font-display text-base font-semibold leading-snug group-hover:text-muted-foreground transition-colors line-clamp-3">
-                {card.title}
-              </h3>
-              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                {card.kidSummary}
-              </p>
-              <Meta
-                source={card.sourceName}
-                publishedAt={card.publishedAt}
-                readingTimeMinutes={card.readingTimeMinutes}
-              />
-            </div>
+                {/* Text */}
+                <div className="flex flex-col gap-2 min-w-0">
+                  <CategoryPill category={card.category} />
+                  <h3 className="font-display text-base font-semibold leading-snug group-hover:text-muted-foreground transition-colors line-clamp-3">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                    {card.kidSummary}
+                  </p>
+                  <Meta
+                    source={card.sourceName}
+                    publishedAt={card.publishedAt}
+                    readingTimeMinutes={card.readingTimeMinutes}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </Link>
         ))}
       </div>
