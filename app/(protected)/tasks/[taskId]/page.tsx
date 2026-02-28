@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useMemo, useState } from "react";
@@ -19,10 +20,14 @@ function statusVariant(
     | "planned"
     | "prompting"
     | "prompted"
+    | "rendering"
+    | "rendered"
     | "failed",
 ) {
   if (status === "failed") return "destructive";
-  if (status === "planned" || status === "prompted") return "secondary";
+  if (status === "planned" || status === "prompted" || status === "rendered") {
+    return "secondary";
+  }
   return "outline";
 }
 
@@ -43,6 +48,7 @@ export default function TaskDetailsPage() {
   const runTaskIngestion = useAction(api.workflowTasks.runTaskIngestion);
   const generateStoryPlan = useAction(api.workflowTasks.generateStoryPlan);
   const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
+  const generateSceneImages = useAction(api.workflowTasks.generateSceneImages);
 
   const [isRunning, setIsRunning] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -54,15 +60,19 @@ export default function TaskDetailsPage() {
     setMessage(null);
     setError(null);
     try {
-      if (task.status === "queued" || task.status === "failed") {
+      // Retry based on available artifacts, not only status.
+      if (task.sourceDocuments.length === 0) {
         await runTaskIngestion({ taskId: task._id });
         setMessage("Ingestion started.");
-      } else if (task.status === "ingested") {
+      } else if (!task.storyPlan) {
         await generateStoryPlan({ taskId: task._id });
         setMessage("Story plan generated.");
-      } else if (task.status === "planned") {
+      } else if (!task.scenePrompts?.length) {
         await generatePromptPack({ taskId: task._id });
         setMessage("Prompt pack generated.");
+      } else if (!task.assets?.images?.length) {
+        await generateSceneImages({ taskId: task._id });
+        setMessage("Scene images generated.");
       }
     } catch (stageError) {
       setError(
@@ -75,9 +85,10 @@ export default function TaskDetailsPage() {
 
   const nextActionLabel = (() => {
     if (!task) return null;
-    if (task.status === "queued" || task.status === "failed") return "Run Ingestion";
-    if (task.status === "ingested") return "Generate Story Plan";
-    if (task.status === "planned") return "Generate Prompt Pack";
+    if (task.sourceDocuments.length === 0) return "Run Ingestion";
+    if (!task.storyPlan) return "Generate Story Plan";
+    if (!task.scenePrompts?.length) return "Generate Prompt Pack";
+    if (!task.assets?.images?.length) return "Generate Scene Images";
     return null;
   })();
 
@@ -109,20 +120,27 @@ export default function TaskDetailsPage() {
             <section className="rounded-lg border p-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Badge variant={statusVariant(task.status)}>{task.status}</Badge>
+                  <Badge variant={statusVariant(task.status)}>
+                    {task.status}
+                  </Badge>
                   <span className="text-xs text-muted-foreground">
                     Progress: {task.progress ?? 0}%
                   </span>
                 </div>
                 {nextActionLabel && (
-                  <Button disabled={isRunning} onClick={() => void runNextStage()}>
+                  <Button
+                    disabled={isRunning}
+                    onClick={() => void runNextStage()}
+                  >
                     {isRunning ? "Working..." : nextActionLabel}
                   </Button>
                 )}
               </div>
               <p className="text-sm">
                 <span className="font-medium">Input: </span>
-                <span className="text-muted-foreground break-all">{task.input}</span>
+                <span className="text-muted-foreground break-all">
+                  {task.input}
+                </span>
               </p>
               {task.error && (
                 <p className="text-sm text-destructive">Error: {task.error}</p>
@@ -140,9 +158,16 @@ export default function TaskDetailsPage() {
               </p>
               <div className="space-y-2 max-h-72 overflow-y-auto">
                 {task.sourceDocuments.map((doc, idx) => (
-                  <div key={`${doc.url}-${idx}`} className="rounded-md border p-2">
-                    <p className="text-sm font-medium">{doc.title ?? "Untitled"}</p>
-                    <p className="text-xs text-muted-foreground break-all">{doc.url}</p>
+                  <div
+                    key={`${doc.url}-${idx}`}
+                    className="rounded-md border p-2"
+                  >
+                    <p className="text-sm font-medium">
+                      {doc.title ?? "Untitled"}
+                    </p>
+                    <p className="text-xs text-muted-foreground break-all">
+                      {doc.url}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -165,7 +190,9 @@ export default function TaskDetailsPage() {
                         <p className="text-sm font-medium">
                           Scene {scene.sceneNumber}: {scene.title}
                         </p>
-                        <p className="text-xs text-muted-foreground">{scene.summary}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {scene.summary}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -203,6 +230,67 @@ export default function TaskDetailsPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Prompt pack not generated yet.
+                </p>
+              )}
+            </section>
+
+            <section className="rounded-lg border p-4 space-y-2">
+              <h2 className="text-lg font-medium">Image Assets</h2>
+              {task.assets?.images?.length ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {task.assets.images.length} scene image pairs generated
+                  </p>
+                  <div className="space-y-3">
+                    {task.assets.images.map((image) => (
+                      <div
+                        key={`${image.sceneNumber}-${image.sceneTitle}`}
+                        className="rounded-md border p-3 space-y-2"
+                      >
+                        <div className="gap-4 flex">
+                          <img
+                            alt="Example scene image"
+                            className="rounded-md border"
+                            height={300}
+                            src={image.startImageUrl}
+                            width={300}
+                          />
+                          <img
+                            alt="Example scene image"
+                            className="rounded-md border"
+                            height={300}
+                            src={image.endImageUrl}
+                            width={300}
+                          />
+                        </div>
+                        <p className="text-sm font-medium">
+                          Scene {image.sceneNumber}: {image.sceneTitle}
+                        </p>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          <a
+                            href={image.startImageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-muted-foreground break-all underline"
+                          >
+                            Start frame
+                          </a>
+                          <a
+                            href={image.endImageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs text-muted-foreground break-all underline"
+                          >
+                            End frame
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Scene images not generated yet.
                 </p>
               )}
             </section>

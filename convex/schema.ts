@@ -78,6 +78,8 @@ export default defineSchema({
       v.literal("planned"),
       v.literal("prompting"),
       v.literal("prompted"),
+      v.literal("rendering"),
+      v.literal("rendered"),
       v.literal("failed"),
     ),
     stage: v.union(
@@ -88,6 +90,8 @@ export default defineSchema({
       v.literal("planned"),
       v.literal("prompting"),
       v.literal("prompted"),
+      v.literal("rendering"),
+      v.literal("rendered"),
       v.literal("failed"),
     ),
     progress: v.optional(v.number()), // 0-100
@@ -151,6 +155,23 @@ export default defineSchema({
           style: v.optional(v.string()),
         }),
       ),
+    ),
+    assets: v.optional(
+      v.object({
+        images: v.array(
+          v.object({
+            sceneNumber: v.number(),
+            sceneTitle: v.string(),
+            startImageUrl: v.string(),
+            endImageUrl: v.string(),
+            startPrompt: v.string(),
+            endPrompt: v.string(),
+            model: v.string(),
+            aspectRatio: v.string(),
+            generatedAt: v.number(),
+          }),
+        ),
+      }),
     ),
     createdAt: v.number(),
     updatedAt: v.number(),

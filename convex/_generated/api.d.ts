@@ -18,6 +18,8 @@ import type * as quizzes from "../quizzes.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 import type * as workflowTasks from "../workflowTasks.js";
+import type * as workflow_helpers from "../workflow/helpers.js";
+import type * as workflow_validators from "../workflow/validators.js";
 
 import type {
   ApiFromModules,
@@ -36,6 +38,8 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   users: typeof users;
   workflowTasks: typeof workflowTasks;
+  "workflow/helpers": typeof workflow_helpers;
+  "workflow/validators": typeof workflow_validators;
 }>;
 
 /**
