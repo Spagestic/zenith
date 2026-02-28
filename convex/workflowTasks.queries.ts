@@ -168,3 +168,41 @@ export const getTaskInternal = internalQuery({
     return await ctx.db.get(args.taskId);
   },
 });
+
+export const listResumableTasksInternal = internalQuery({
+  args: {
+    limit: v.optional(v.number()),
+    includeFailed: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(args.limit ?? 25, 100));
+    const includeFailed = args.includeFailed ?? true;
+    const candidateStatuses: Array<
+      | "queued"
+      | "ingested"
+      | "planned"
+      | "prompted"
+      | "rendered"
+      | "failed"
+    > = includeFailed
+      ? ["failed", "queued", "ingested", "planned", "prompted", "rendered"]
+      : ["queued", "ingested", "planned", "prompted", "rendered"];
+
+    const gathered = await Promise.all(
+      candidateStatuses.map((status) =>
+        ctx.db
+          .query("workflowTasks")
+          .withIndex("by_status_updated", (q) => q.eq("status", status))
+          .order("desc")
+          .take(100),
+      ),
+    );
+
+    const merged = gathered
+      .flat()
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    const unique = new Map(merged.map((task) => [task._id, task]));
+
+    return Array.from(unique.values()).slice(0, limit);
+  },
+});

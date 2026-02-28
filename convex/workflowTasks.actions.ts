@@ -991,3 +991,90 @@ export const resumeMyWorkflowTasks = action({
     };
   },
 });
+
+export const resumeWorkflowTasksAdmin = action({
+  args: {
+    adminKey: v.string(),
+    limit: v.optional(v.number()),
+    includeFailed: v.optional(v.boolean()),
+    taskIds: v.optional(v.array(v.id("workflowTasks"))),
+  },
+  handler: async (ctx, args) => {
+    if (!isAdminRequest(args.adminKey)) {
+      throw new Error("Invalid admin key");
+    }
+
+    const limit = Math.max(1, Math.min(args.limit ?? 25, 100));
+    const includeFailed = args.includeFailed ?? true;
+
+    const tasks = args.taskIds?.length
+      ? (
+          await Promise.all(
+            args.taskIds.map((taskId) =>
+              ctx.runQuery(internal.workflowTasks.getTaskInternal, { taskId }),
+            ),
+          )
+        ).filter((task): task is NonNullable<typeof task> => !!task)
+      : await ctx.runQuery(internal.workflowTasks.listResumableTasksInternal, {
+          limit,
+          includeFailed,
+        });
+
+    const started: string[] = [];
+    const skipped: string[] = [];
+    const failed: Array<{ taskId: string; error: string }> = [];
+
+    for (const task of tasks) {
+      if (started.length >= limit) break;
+
+      const isComplete =
+        !!task.storyPlan &&
+        !!task.scenePrompts?.length &&
+        !!task.assets?.images?.length &&
+        !!task.assets?.videos?.length &&
+        !!task.assets?.tts?.length;
+      if (isComplete) {
+        skipped.push(task._id);
+        continue;
+      }
+      if (
+        !includeFailed &&
+        (task.status === "failed" || task.stage === "failed")
+      ) {
+        skipped.push(task._id);
+        continue;
+      }
+      if (
+        task.status === "ingesting" ||
+        task.status === "planning" ||
+        task.status === "prompting" ||
+        task.status === "rendering"
+      ) {
+        skipped.push(task._id);
+        continue;
+      }
+
+      try {
+        await ctx.runAction(api.workflowTasks.runWorkflowTask, {
+          taskId: task._id,
+          adminKey: args.adminKey,
+        });
+        started.push(task._id);
+      } catch (error) {
+        failed.push({
+          taskId: task._id,
+          error: error instanceof Error ? error.message : "Failed to resume task",
+        });
+      }
+    }
+
+    return {
+      startedCount: started.length,
+      skippedCount: skipped.length,
+      failedCount: failed.length,
+      startedTaskIds: started,
+      skippedTaskIds: skipped,
+      failed,
+    };
+  },
+});

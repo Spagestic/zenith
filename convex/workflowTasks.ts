@@ -5,6 +5,7 @@ export {
   getRenderedStoryById,
   getMyTaskById,
   getTaskInternal,
+  listResumableTasksInternal,
 } from "./workflowTasks.queries";
 
 export {
@@ -27,6 +28,7 @@ export {
   runTaskIngestion,
   runWorkflowTask,
   resumeMyWorkflowTasks,
+  resumeWorkflowTasksAdmin,
   generateStoryPlan,
   generatePromptPack,
   generateSceneImages,
