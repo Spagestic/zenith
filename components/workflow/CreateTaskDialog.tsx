@@ -100,7 +100,7 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create News Workflow Task</DialogTitle>
           <DialogDescription>
@@ -111,13 +111,14 @@ export function CreateTaskDialog({
 
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Input
+                className="min-w-0 flex-1"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Topic or URL (e.g. https://example.com/news or climate summit)"
               />
-              <Button type="submit" disabled={!canSubmit}>
+              <Button className="sm:shrink-0" type="submit" disabled={!canSubmit}>
                 {isSubmitting ? "Creating..." : "Create Task"}
               </Button>
             </div>
