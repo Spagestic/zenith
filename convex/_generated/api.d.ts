@@ -17,6 +17,7 @@ import type * as minimax from "../minimax.js";
 import type * as quizzes from "../quizzes.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
+import type * as workflowTasks from "../workflowTasks.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   quizzes: typeof quizzes;
   seed: typeof seed;
   users: typeof users;
+  workflowTasks: typeof workflowTasks;
 }>;
 
 /**

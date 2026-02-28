@@ -64,4 +64,41 @@ export default defineSchema({
   })
     .index("by_session", ["sessionId"])
     .index("by_article_session", ["articleId", "sessionId"]),
+
+  // ============ WORKFLOW TASKS ============
+  workflowTasks: defineTable({
+    userId: v.id("users"),
+    input: v.string(),
+    inputType: v.union(v.literal("url"), v.literal("topic")),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("ingesting"),
+      v.literal("ingested"),
+      v.literal("failed"),
+    ),
+    stage: v.union(
+      v.literal("created"),
+      v.literal("ingesting"),
+      v.literal("ingested"),
+      v.literal("failed"),
+    ),
+    progress: v.optional(v.number()), // 0-100
+    error: v.optional(v.string()),
+    sourceUrls: v.array(v.string()),
+    sourceDocuments: v.array(
+      v.object({
+        url: v.string(),
+        title: v.optional(v.string()),
+        publishedDate: v.optional(v.string()),
+        author: v.optional(v.string()),
+        text: v.optional(v.string()),
+        summary: v.optional(v.string()),
+        highlights: v.optional(v.array(v.string())),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user_created", ["userId", "createdAt"])
+    .index("by_status_updated", ["status", "updatedAt"]),
 });
