@@ -24,9 +24,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useQueryState, parseAsString } from "nuqs";
+
+const TOPIC_CATEGORIES = [
+  { value: "hk-local", label: "HK Local", icon: MapPin },
+  { value: "world", label: "World", icon: Earth },
+  { value: "business", label: "Business", icon: DollarSign },
+  { value: "tech-science", label: "Tech & Science", icon: Atom },
+  { value: "sports", label: "Sports", icon: Dumbbell },
+  { value: "art-culture", label: "Art & Culture", icon: Palette },
+  { value: "entertainment", label: "Entertainment", icon: Tv },
+];
 
 export default function Header() {
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useQueryState(
+    "category",
+    parseAsString.withDefault("for-you"),
+  );
+
+  const activeTab = TOPIC_CATEGORIES.some((t) => t.value === category)
+    ? "topics"
+    : category === "top"
+      ? "top"
+      : "for-you";
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background">
@@ -44,49 +65,30 @@ export default function Header() {
             Zenith
           </span>
         </Link>
-        <Tabs defaultValue="overview">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setCategory(v === "for-you" ? null : v)}
+        >
           <TabsList variant="line">
-            <TabsTrigger value="overview">For You</TabsTrigger>
-            <TabsTrigger value="analytics">Top</TabsTrigger>
+            <TabsTrigger value="for-you">For You</TabsTrigger>
+            <TabsTrigger value="top">Top</TabsTrigger>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <TabsTrigger
-                  value="reports"
-                  className="flex items-center gap-1"
-                >
+                <TabsTrigger value="topics" className="flex items-center gap-1">
                   Topics <ChevronDown className="h-3 w-3" />
                 </TabsTrigger>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem>
-                  <MapPin className=" h-4 w-4" />
-                  HK Local
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Earth className=" h-4 w-4" />
-                  World
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <DollarSign className=" h-4 w-4" />
-                  Business
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Atom className=" h-4 w-4" />
-                  Tech & Science
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Dumbbell className=" h-4 w-4" />
-                  Sports
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Palette className=" h-4 w-4" />
-                  Art & Culture
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Tv className=" h-4 w-4" />
-                  Entertainment
-                </DropdownMenuItem>
+                {TOPIC_CATEGORIES.map(({ value, label, icon: Icon }) => (
+                  <DropdownMenuItem
+                    key={value}
+                    onSelect={() => setCategory(value)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </TabsList>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Volume2, Brain, FileQuestion, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQueryState, parseAsString } from "nuqs";
 
 const articles = [
   {
@@ -59,15 +60,18 @@ const articles = [
   },
 ];
 
-interface TrendingGridProps {
-  activeCategory?: string;
-}
+const TrendingGrid = () => {
+  const [category] = useQueryState(
+    "category",
+    parseAsString.withDefault("for-you"),
+  );
 
-const TrendingGrid = ({ activeCategory = "all" }: TrendingGridProps) => {
   const filtered =
-    activeCategory === "all"
+    !category || category === "for-you" || category === "top"
       ? articles
-      : articles.filter((a) => a.category.toLowerCase() === activeCategory);
+      : articles.filter(
+          (a) => a.category.toLowerCase().replace(/ /g, "-") === category,
+        );
 
   const displayArticles = filtered.length > 0 ? filtered : articles;
 
