@@ -64,7 +64,9 @@ export default function WatchPage() {
     story?.videos?.[Math.min(activeIndex, (story?.videos?.length ?? 1) - 1)];
   const currentTTS =
     story && currentVideo
-      ? (story.tts ?? []).find((clip) => clip.sceneNumber === currentVideo.sceneNumber)
+      ? (story.tts ?? []).find(
+          (clip) => clip.sceneNumber === currentVideo.sceneNumber,
+        )
       : null;
 
   useEffect(() => {
@@ -139,7 +141,8 @@ export default function WatchPage() {
   };
 
   const related = useMemo(
-    () => (relatedStories ?? []).filter((item) => item.taskId !== story?.taskId),
+    () =>
+      (relatedStories ?? []).filter((item) => item.taskId !== story?.taskId),
     [relatedStories, story?.taskId],
   );
 
@@ -170,9 +173,9 @@ export default function WatchPage() {
         )}
 
         {story && (
-          <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_402px] lg:gap-6">
             {/* Main content — YouTube-style left column */}
-            <section className="min-w-0 flex-1 lg:max-w-[calc(100%-420px)]">
+            <section className="min-w-0">
               {/* Video player */}
               {currentVideo && (
                 <div className="rounded-xl overflow-hidden bg-black">
@@ -215,7 +218,11 @@ export default function WatchPage() {
                 </div>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => void togglePlayback()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void togglePlayback()}
+                >
                   {isPlaying ? "Pause" : "Play"}
                 </Button>
                 <Button
@@ -264,23 +271,23 @@ export default function WatchPage() {
                       {typeof subscriberCount === "number" &&
                         `${subscriberCount} subscriber${subscriberCount === 1 ? "" : "s"}`}
                       {typeof subscriberCount === "number" && " · "}
-                      Scene {Math.min(activeIndex + 1, story.videos.length)} of{" "}
-                      {story.videos.length}
+                      Scene {Math.min(
+                        activeIndex + 1,
+                        story.videos.length,
+                      )} of {story.videos.length}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {creatorId &&
-                    isSubscribed !== undefined &&
-                    !isOwnChannel && (
-                      <Button
-                        size="sm"
-                        variant={isSubscribed ? "secondary" : "default"}
-                        onClick={() => void onSubscribeToggle()}
-                      >
-                        {isSubscribed ? "Subscribed" : "Subscribe"}
-                      </Button>
-                    )}
+                  {creatorId && isSubscribed !== undefined && !isOwnChannel && (
+                    <Button
+                      size="sm"
+                      variant={isSubscribed ? "secondary" : "default"}
+                      onClick={() => void onSubscribeToggle()}
+                    >
+                      {isSubscribed ? "Subscribed" : "Subscribe"}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant="secondary"
@@ -294,9 +301,7 @@ export default function WatchPage() {
               {/* Description */}
               <div className="mt-4 rounded-xl bg-muted/30 px-4 py-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>
-                    {formatRelativeTime(story.generatedAt)}
-                  </span>
+                  <span>{formatRelativeTime(story.generatedAt)}</span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">
                   {descriptionText}
@@ -345,7 +350,7 @@ export default function WatchPage() {
             </section>
 
             {/* Right sidebar — other videos */}
-            <aside className="w-full shrink-0 lg:w-[402px]">
+            <aside className="w-full lg:w-[402px]">
               <h2 className="mb-3 text-sm font-semibold text-foreground">
                 Other videos
               </h2>
@@ -374,7 +379,8 @@ export default function WatchPage() {
                           </div>
                         )}
                         <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                          {item.sceneCount} scene{item.sceneCount !== 1 ? "s" : ""}
+                          {item.sceneCount} scene
+                          {item.sceneCount !== 1 ? "s" : ""}
                         </span>
                       </div>
                       <div className="min-w-0 flex-1 py-0.5">
