@@ -180,7 +180,7 @@ function ArticleSkeleton() {
   return (
     <div className="min-h-screen bg-linear-to-b from-sky-50 to-white">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <Card className="overflow-hidden border-border shadow-lg mb-8">
+        <Card className="pt-0 overflow-hidden border-border shadow-lg mb-8">
           <Skeleton className="aspect-video w-full" />
           <CardHeader className="space-y-3">
             <Skeleton className="h-6 w-24" />
