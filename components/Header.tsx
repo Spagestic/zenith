@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useQueryState, parseAsString } from "nuqs";
+import { Button } from "./ui/button";
 
 const TOPIC_CATEGORIES = [
   { value: "hk-local", label: "HK Local", icon: MapPin },
@@ -53,7 +54,6 @@ export default function Header() {
   return (
     <nav className="sticky top-0 z-50 border-b bg-background">
       <div className="mx-auto flex h-14 items-center sm:h-16 px-4 gap-4">
-
         {/* Left — Logo (fixed width to mirror right column) */}
         <div className="flex shrink-0 items-center gap-3 w-40">
           <Link href="/" className="group flex items-center gap-2">
@@ -82,7 +82,10 @@ export default function Header() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <TabsTrigger value="topics" className="flex items-center gap-1">
+                  <TabsTrigger
+                    value="topics"
+                    className="flex items-center gap-1"
+                  >
                     Topics <ChevronDown className="h-3 w-3" />
                   </TabsTrigger>
                 </DropdownMenuTrigger>
@@ -121,19 +124,18 @@ export default function Header() {
                 />
               </div>
             ) : (
-              <button
+              <Button
                 onClick={() => setSearchOpen(true)}
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 aria-label="Open search"
+                variant={"ghost"}
               >
                 <Search className="h-4 w-4" />
-              </button>
+              </Button>
             )}
           </div>
 
           <UserAvatar />
         </div>
-
       </div>
 
       {/* Mobile search */}
