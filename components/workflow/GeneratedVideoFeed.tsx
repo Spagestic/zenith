@@ -27,14 +27,14 @@ export default function GeneratedVideoFeed() {
 
   return (
     <section className="py-6">
-      <div className="mb-4 flex items-center justify-between">
+      {/* <div className="mb-4 flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">
           Generated Cartoon Stories
         </h2>
         <span className="text-sm text-muted-foreground">
           YouTube-style feed
         </span>
-      </div>
+      </div> */}
 
       {stories === undefined && (
         <p className="text-sm text-muted-foreground">Loading videos...</p>
