@@ -25,7 +25,7 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="bg-muted relative hidden lg:block">
-        <div className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale" />
+        <Image src="/auth.jpeg" alt="Zenith" fill className="object-cover" />
       </div>
     </div>
   );
