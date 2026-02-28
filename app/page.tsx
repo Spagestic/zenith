@@ -1,9 +1,5 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/landing/HeroSection";
-import TrendingGrid from "@/components/landing/TrendingGrid";
-import HowItWorks from "@/components/landing/HowItWorks";
-import TransparencyPanel from "@/components/landing/TransparencyPanel";
-import Newsletter from "@/components/landing/Newsletter";
 import Footer from "@/components/landing/Footer";
 
 export default function HomePage() {
@@ -14,12 +10,7 @@ export default function HomePage() {
         <main className="">
           <HeroSection />
           <div className="border-t border-border" />
-          <TrendingGrid />
-          <HowItWorks />
-          <TransparencyPanel />
-          <Newsletter />
         </main>
-
         <Footer />
       </div>
     </div>
