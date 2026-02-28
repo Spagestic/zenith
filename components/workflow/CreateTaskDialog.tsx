@@ -40,6 +40,28 @@ function statusVariant(
   return "outline";
 }
 
+function getTaskDisplayText(task: {
+  storyTitle?: string;
+  input: string;
+  inputType: "url" | "topic";
+}) {
+  const storyTitle = task.storyTitle?.trim();
+  if (storyTitle) return storyTitle;
+
+  if (task.inputType === "url") {
+    try {
+      const parsed = new URL(task.input);
+      const path = parsed.pathname === "/" ? "" : parsed.pathname;
+      const shortPath = path.length > 36 ? `${path.slice(0, 36)}...` : path;
+      return `${parsed.hostname}${shortPath}`;
+    } catch {
+      return task.input;
+    }
+  }
+
+  return task.input;
+}
+
 export function CreateTaskDialog({
   open,
   onOpenChange,
@@ -173,7 +195,9 @@ export function CreateTaskDialog({
                         : ""}
                     </span>
                   </div>
-                  <p className="truncate text-muted-foreground">{task.input}</p>
+                  <p className="truncate text-muted-foreground" title={task.input}>
+                    {getTaskDisplayText(task)}
+                  </p>
                 </div>
               ))
             ) : (
