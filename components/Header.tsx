@@ -75,13 +75,13 @@ export default function Header() {
           </div>
 
           {/* Right — Avatar */}
-          <div className="flex shrink-0 items-center justify-end gap-2 w-40">
+          <div className="flex shrink-0 items-center justify-end gap-4 w-40">
             <Button
               variant="outline"
               className="px-3"
               onClick={() => setIsCreateTaskOpen(true)}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" /> Create
             </Button>
             <UserAvatar />
           </div>
