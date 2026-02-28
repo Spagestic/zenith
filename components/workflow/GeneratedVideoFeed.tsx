@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useMemo, useState } from "react";
 import VideoCard from "@/components/workflow/VideoCard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function formatRelativeTime(timestamp: number) {
   const diff = Date.now() - timestamp;
@@ -37,7 +38,17 @@ export default function GeneratedVideoFeed() {
       </div> */}
 
       {stories === undefined && (
-        <p className="text-sm text-muted-foreground">Loading videos...</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="space-y-3">
+              <Skeleton className="aspect-video w-full rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {stories && stories.length === 0 && (
