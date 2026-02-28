@@ -12,7 +12,7 @@ export const SEED_ARTICLES = [
 Merz had lunch and took group photos with local entrepreneurs, including Alibaba CEO Eddie Wu Yongming and Unitree founder and CEO Wang Xingxing. He met representatives from 10 companies in Hangzhou that specialise in AI, humanoid robots and electric vehicles (EVs).
 
 A highlight of the visit was Merz’s tour of Unitree, a leader in humanoid robots. Unitree’s Wang showcased humanoids dancing, boxing and performing martial arts. Merz also tried on Rokid’s AI glasses and expressed “strong interest and appreciation for the product”.`,
-    imageUrl: "/herosection/world.png",
+    imageUrl: "/data/germanys-merz-meets-chinas-tech-vanguard.png",
     category: "world" as const,
     sourceUrl:
       "https://www.scmp.com/tech/article/3344835/germanys-merz-meets-chinas-tech-vanguard-including-alibaba-and-unitree-ceos",
