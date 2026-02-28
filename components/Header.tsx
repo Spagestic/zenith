@@ -5,7 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { UserAvatar } from "./user-avatar";
-import { Search, X } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "./ui/button";
 
@@ -15,7 +15,6 @@ export default function Header() {
   return (
     <nav className="sticky top-0 z-50 border-b bg-background">
       <div className="mx-auto flex h-14 items-center sm:h-16 px-4 gap-4">
-
         {/* Left — Logo */}
         <div className="flex shrink-0 items-center w-40">
           <Link href="/" className="group flex items-center gap-2">
@@ -35,7 +34,6 @@ export default function Header() {
         {/* Centre — Search bar */}
         <div className="flex flex-1 items-center justify-center">
           <div className="flex w-full max-w-xl items-center">
-
             {/* Input */}
             <Input
               placeholder="Search news..."
@@ -70,15 +68,16 @@ export default function Header() {
             >
               <Search className="h-4 w-4 text-muted-foreground" />
             </Button>
-
           </div>
         </div>
 
         {/* Right — Avatar */}
         <div className="flex shrink-0 items-center justify-end gap-2 w-40">
+          <Button variant="outline" className="px-3">
+            <Plus className="h-4 w-4" />
+          </Button>
           <UserAvatar />
         </div>
-
       </div>
     </nav>
   );
