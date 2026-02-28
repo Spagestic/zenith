@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   title: "Zenith",
   description: "EdTech News Platform",
   icons: {
-    icon: "/logo_png",
+    icon: "/logo_.png",
   },
 };
 
