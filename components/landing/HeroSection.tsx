@@ -178,47 +178,47 @@ const HeroSection = () => {
       <div className="border-t border-border" />
 
       {/* ── ROW 2: 2 wide horizontal cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {wideCards.map((card) => (
-          <Link
-            key={card.slug}
-            href={`/article/${card.slug}`}
-            className="group"
-          >
-            <Card className="overflow-hidden border-border transition-shadow hover:shadow-lg h-full">
-              <CardContent className="flex flex-row gap-4 items-start p-4">
-                {/* Thumbnail */}
-                <div className="relative w-36 shrink-0 aspect-video overflow-hidden rounded-lg bg-muted">
-                  <Image
-                    src={card.imageUrl || "/placeholder.png"}
-                    alt={card.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-                  />
-                </div>
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {wideCards.map((card) => (
+    <Link
+      key={card.slug}
+      href={`/article/${card.slug}`}
+      className="group"
+    >
+      <Card className="overflow-hidden border-border transition-shadow hover:shadow-lg h-full">
+        <CardContent className="flex flex-row gap-4 items-start p-4">
+          
+          {/* Thumbnail — taller, no crop */}
+          <div className="relative w-40 shrink-0 self-stretch overflow-hidden rounded-lg bg-muted">
+            <Image
+              src={card.imageUrl || "/placeholder.png"}
+              alt={card.title}
+              fill
+              className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+            />
+          </div>
 
-                {/* Text */}
-                <div className="flex flex-col gap-2 min-w-0">
-                  <CategoryPill category={card.category} />
-                  <h3 className="font-display text-base font-semibold leading-snug group-hover:text-muted-foreground transition-colors line-clamp-3">
-                    {card.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                    {card.kidSummary}
-                  </p>
-                  <Meta
-                    source={card.sourceName}
-                    publishedAt={card.publishedAt}
-                    readingTimeMinutes={card.readingTimeMinutes}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+          {/* Text — tighter, no summary */}
+          <div className="flex flex-col gap-1.5 min-w-0 py-1">
+            <CategoryPill category={card.category} />
+            <h3 className="font-display text-sm font-semibold leading-snug group-hover:text-muted-foreground transition-colors line-clamp-3">
+              {card.title}
+            </h3>
+            <Meta
+              source={card.sourceName}
+              publishedAt={card.publishedAt}
+              readingTimeMinutes={card.readingTimeMinutes}
+            />
+          </div>
+
+        </CardContent>
+      </Card>
+    </Link>
+  ))}
+</div>
+
     </section>
   );
-};
+}
 
 export default HeroSection;
