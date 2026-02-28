@@ -22,39 +22,45 @@ export function UserAvatar({ className }: { className?: string }) {
   const { signOut } = useAuthActions();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className="group h-auto rounded-full p-0 hover:bg-transparent"
-          variant="ghost"
-        >
-          <Avatar className="ring-offset-background transition-all group-hover:ring-2 group-hover:ring-secondary">
-            <AvatarImage alt="Profile image" src={user?.image || ""} />
-            <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className={`max-w-64 ${className}`}>
-        <DropdownMenuLabel className="flex min-w-0 flex-col">
-          <span className="truncate font-medium text-foreground text-sm">
-            {user?.name}
-          </span>
-          <span className="truncate font-normal text-muted-foreground text-xs">
-            {user?.email}
-          </span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() =>
-            void signOut().then(() => {
-              router.push("/login");
-            })
-          }
-        >
-          <LogOutIcon aria-hidden="true" className="opacity-60" size={16} />
-          Logout
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      {!user ? (
+        <Button onClick={() => router.push("/login")}>Sign In</Button>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              className="group h-auto rounded-full p-0 hover:bg-transparent"
+              variant="ghost"
+            >
+              <Avatar className="ring-offset-background transition-all group-hover:ring-2 group-hover:ring-secondary">
+                <AvatarImage alt="Profile image" src={user?.image || ""} />
+                <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className={`max-w-64 ${className}`}>
+            <DropdownMenuLabel className="flex min-w-0 flex-col">
+              <span className="truncate font-medium text-foreground text-sm">
+                {user?.name}
+              </span>
+              <span className="truncate font-normal text-muted-foreground text-xs">
+                {user?.email}
+              </span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() =>
+                void signOut().then(() => {
+                  router.push("/login");
+                })
+              }
+            >
+              <LogOutIcon aria-hidden="true" className="opacity-60" size={16} />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </>
   );
 }

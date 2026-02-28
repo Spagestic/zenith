@@ -5,11 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import {
-  Search,
-  Shield,
   Lock,
   Play,
   Pause,
@@ -19,7 +16,6 @@ import {
   Map,
   Flame,
   Headphones,
-  Compass,
   ChevronDown,
   Music,
   TreePine,
@@ -27,6 +23,7 @@ import {
   Sparkles,
   Landmark,
 } from "lucide-react";
+import Header from "@/components/Header";
 
 // ────────────────────────────────────────────────────────────
 //  Mock data – replace with Convex queries later
@@ -86,7 +83,6 @@ const TREE_NODES = {
 // ────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const [search, setSearch] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<string | null>(null);
   const [progress, setProgress] = useState([0]);
@@ -99,60 +95,7 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
-      {/* ═══════════════ NAVBAR ═══════════════ */}
-      <nav className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-md dark:bg-slate-950/80">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:h-16">
-          {/* Logo */}
-          <div className="flex shrink-0 items-center gap-2">
-            <Compass className="h-6 w-6 text-primary" />
-            <span className="text-lg font-bold tracking-tight sm:text-xl">
-              EduStream
-            </span>
-          </div>
-
-          {/* Search */}
-          <div className="relative hidden w-full max-w-md md:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search topics..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* Right */}
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <Badge
-              variant="secondary"
-              className="hidden gap-1.5 px-2.5 py-1 sm:inline-flex"
-            >
-              <Shield className="h-3.5 w-3.5 text-green-600" />
-              <span className="text-xs font-medium">SAFE MODE</span>
-            </Badge>
-
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-              <Lock className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Login &gt;18</span>
-              <span className="sm:hidden">Login</span>
-              <span className="hidden sm:inline">🔒</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile search */}
-        <div className="border-t px-4 py-2 md:hidden">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search topics..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* ═══════════════ MAIN ═══════════════ */}
       <main className="mx-auto max-w-7xl space-y-10 px-4 pb-28 pt-8">
