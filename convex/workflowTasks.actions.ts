@@ -871,7 +871,7 @@ export const runWorkflowTask = action({
     if (task.sourceDocuments.length === 0) {
       await ctx.runAction(api.workflowTasks.runTaskIngestion, {
         taskId: args.taskId,
-        autoContinue: false,
+        autoContinue: true,
         adminKey: args.adminKey,
       });
       return { status: "started", stage: "ingestion" as const };
@@ -879,7 +879,7 @@ export const runWorkflowTask = action({
     if (!task.storyPlan) {
       await ctx.runAction(api.workflowTasks.generateStoryPlan, {
         taskId: args.taskId,
-        autoContinue: false,
+        autoContinue: true,
         adminKey: args.adminKey,
       });
       return { status: "started", stage: "planning" as const };
@@ -887,7 +887,7 @@ export const runWorkflowTask = action({
     if (!task.scenePrompts?.length) {
       await ctx.runAction(api.workflowTasks.generatePromptPack, {
         taskId: args.taskId,
-        autoContinue: false,
+        autoContinue: true,
         adminKey: args.adminKey,
       });
       return { status: "started", stage: "prompting" as const };
@@ -895,7 +895,7 @@ export const runWorkflowTask = action({
     if (!task.assets?.images?.length) {
       await ctx.runAction(api.workflowTasks.generateSceneImages, {
         taskId: args.taskId,
-        autoContinue: false,
+        autoContinue: true,
         adminKey: args.adminKey,
       });
       return { status: "started", stage: "images" as const };
@@ -903,7 +903,7 @@ export const runWorkflowTask = action({
     if (!task.assets?.videos?.length) {
       await ctx.runAction(api.workflowTasks.generateSceneVideos, {
         taskId: args.taskId,
-        autoContinue: false,
+        autoContinue: true,
         adminKey: args.adminKey,
       });
       return { status: "started", stage: "videos" as const };
@@ -911,7 +911,7 @@ export const runWorkflowTask = action({
     if (!task.assets?.tts?.length) {
       await ctx.runAction(api.workflowTasks.generateSceneTTS, {
         taskId: args.taskId,
-        autoContinue: false,
+        autoContinue: true,
         adminKey: args.adminKey,
       });
       return { status: "started", stage: "tts" as const };
