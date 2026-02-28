@@ -61,6 +61,17 @@ export type VideoAsset = {
   generatedAt: number;
 };
 
+export type TTSAsset = {
+  sceneNumber: number;
+  sceneTitle: string;
+  narrationText: string;
+  audioUrl: string;
+  voiceId: string;
+  model: string;
+  speed: number;
+  generatedAt: number;
+};
+
 export function detectInputType(input: string): "url" | "topic" {
   try {
     const candidate = new URL(input);

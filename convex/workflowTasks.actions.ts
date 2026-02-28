@@ -10,6 +10,7 @@ import {
   parsePromptPack,
   parseStoryPlan,
   type ImageAsset,
+  type TTSAsset,
   type VideoAsset,
 } from "./workflow/helpers";
 
@@ -36,6 +37,36 @@ function extractVideoUrl(result: unknown): string | null {
     return payload.file_details.download_url;
   }
   return null;
+}
+
+function countWords(text: string): number {
+  const tokens = text.trim().match(/\S+/g);
+  return tokens ? tokens.length : 0;
+}
+
+function shortenNarrationForDuration(
+  narration: string,
+  sceneDurationSeconds: number,
+): string {
+  const wordsPerSecond = 2.2;
+  const minWords = 8;
+  const maxWords = 28;
+  const duration = sceneDurationSeconds > 0 ? sceneDurationSeconds : 6;
+  const wordBudget = Math.max(
+    minWords,
+    Math.min(maxWords, Math.floor(duration * wordsPerSecond)),
+  );
+
+  if (countWords(narration) <= wordBudget) {
+    return narration.trim();
+  }
+
+  const words = narration.trim().split(/\s+/).slice(0, wordBudget);
+  let shortened = words.join(" ").replace(/[,:;.\-!?]+$/, "");
+  if (shortened.length > 0) {
+    shortened = `${shortened}.`;
+  }
+  return shortened;
 }
 
 export const runTaskIngestion = action({
@@ -630,6 +661,115 @@ export const generateSceneVideos = action({
         error instanceof Error
           ? error.message
           : "Scene video generation failed";
+      await ctx.runMutation(internal.workflowTasks.setTaskFailed, {
+        taskId: args.taskId,
+        error: message,
+      });
+      throw new Error(message);
+    }
+  },
+});
+
+export const generateSceneTTS = action({
+  args: {
+    taskId: v.id("workflowTasks"),
+    model: v.optional(v.string()),
+    voiceId: v.optional(v.string()),
+    speed: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const task = await ctx.runQuery(internal.workflowTasks.getTaskInternal, {
+      taskId: args.taskId,
+    });
+    if (!task) {
+      throw new Error("Task not found");
+    }
+    if (task.userId !== userId) {
+      throw new Error("Not authorized to generate TTS for this task");
+    }
+    if (!task.storyPlan?.script?.length) {
+      throw new Error("Task has no story script. Generate story plan first.");
+    }
+    if (!task.assets?.videos?.length) {
+      throw new Error("Task has no videos. Generate scene videos first.");
+    }
+
+    await ctx.runMutation(internal.workflowTasks.setTaskRendering, {
+      taskId: args.taskId,
+    });
+
+    const model = args.model ?? "speech-2.8-turbo";
+    const voiceId = args.voiceId ?? "English_expressive_narrator";
+    const speed = args.speed ?? 1;
+
+    try {
+      const ttsAssets: TTSAsset[] = [];
+      const sceneVideos = task.assets.videos
+        .slice()
+        .sort((a, b) => a.sceneNumber - b.sceneNumber);
+
+      for (const sceneVideo of sceneVideos) {
+        const scriptBeat = task.storyPlan.script.find(
+          (beat) => beat.sceneNumber === sceneVideo.sceneNumber,
+        );
+        const rawNarration = scriptBeat?.narration?.trim();
+        if (!rawNarration) {
+          throw new Error(
+            `Missing narration text for scene ${sceneVideo.sceneNumber}`,
+          );
+        }
+        const narrationText = shortenNarrationForDuration(
+          rawNarration,
+          sceneVideo.duration,
+        );
+
+        const speechResponse = await ctx.runAction(api.minimax.generateSpeech, {
+          text: narrationText,
+          model,
+          voice_id: voiceId,
+          output_format: "url",
+          speed,
+        });
+        const audioUrl =
+          speechResponse && typeof speechResponse.audio_url === "string"
+            ? speechResponse.audio_url
+            : null;
+
+        if (!audioUrl) {
+          throw new Error(
+            `TTS generation did not return an audio URL for scene ${sceneVideo.sceneNumber}`,
+          );
+        }
+
+        ttsAssets.push({
+          sceneNumber: sceneVideo.sceneNumber,
+          sceneTitle: sceneVideo.sceneTitle,
+          narrationText,
+          audioUrl,
+          voiceId,
+          model,
+          speed,
+          generatedAt: Date.now(),
+        });
+      }
+
+      await ctx.runMutation(internal.workflowTasks.setTaskTTSGenerated, {
+        taskId: args.taskId,
+        tts: ttsAssets,
+      });
+
+      return {
+        status: "rendered",
+        ttsCount: ttsAssets.length,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Scene TTS generation failed";
       await ctx.runMutation(internal.workflowTasks.setTaskFailed, {
         taskId: args.taskId,
         error: message,

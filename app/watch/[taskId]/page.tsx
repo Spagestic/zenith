@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
@@ -54,11 +54,49 @@ export default function WatchPage() {
     creatorId && currentUser && currentUser._id === creatorId,
   );
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [copied, setCopied] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentVideo =
     story?.videos?.[Math.min(activeIndex, (story?.videos?.length ?? 1) - 1)];
+  const currentTTS =
+    story && currentVideo
+      ? (story.tts ?? []).find((clip) => clip.sceneNumber === currentVideo.sceneNumber)
+      : null;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !currentVideo) return;
+
+    const audio = ttsAudioRef.current;
+    video.currentTime = 0;
+    if (audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    const playInSync = async () => {
+      try {
+        await video.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+
+      if (audio) {
+        try {
+          await audio.play();
+        } catch {
+          // Browser autoplay policy can block audio until user interaction.
+        }
+      }
+    };
+
+    void playInSync();
+  }, [currentVideo, currentTTS?.audioUrl]);
 
   const onShare = async () => {
     if (typeof window === "undefined") return;
@@ -74,6 +112,30 @@ export default function WatchPage() {
     } else {
       subscribeMutation({ creatorId });
     }
+  };
+
+  const togglePlayback = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      try {
+        await video.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+      const audio = ttsAudioRef.current;
+      if (audio) {
+        audio.currentTime = video.currentTime;
+        void audio.play().catch(() => {});
+      }
+      return;
+    }
+
+    video.pause();
+    ttsAudioRef.current?.pause();
+    setIsPlaying(false);
   };
 
   const related = useMemo(
@@ -116,18 +178,64 @@ export default function WatchPage() {
                 <div className="rounded-xl overflow-hidden bg-black">
                   <video
                     key={`${story.taskId}-${activeIndex}`}
+                    ref={videoRef}
                     controls
                     autoPlay
                     className="aspect-video w-full"
                     src={currentVideo.videoUrl}
+                    onPlay={() => {
+                      setIsPlaying(true);
+                      const audio = ttsAudioRef.current;
+                      const video = videoRef.current;
+                      if (audio && video) {
+                        audio.currentTime = video.currentTime;
+                        void audio.play().catch(() => {});
+                      }
+                    }}
+                    onPause={() => {
+                      setIsPlaying(false);
+                      ttsAudioRef.current?.pause();
+                    }}
                     onEnded={() => {
+                      setIsPlaying(false);
+                      ttsAudioRef.current?.pause();
                       if (activeIndex < story.videos.length - 1) {
                         setActiveIndex(activeIndex + 1);
                       }
                     }}
                   />
+                  {currentTTS?.audioUrl && (
+                    <audio
+                      key={`${story.taskId}-${currentTTS.sceneNumber}`}
+                      ref={ttsAudioRef}
+                      src={currentTTS.audioUrl}
+                      preload="auto"
+                    />
+                  )}
                 </div>
               )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => void togglePlayback()}>
+                  {isPlaying ? "Pause" : "Play"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!story || activeIndex >= story.videos.length - 1}
+                  onClick={() =>
+                    setActiveIndex((idx) =>
+                      story ? Math.min(story.videos.length - 1, idx + 1) : idx,
+                    )
+                  }
+                >
+                  Next Scene
+                </Button>
+                {!currentTTS?.audioUrl && (
+                  <span className="self-center text-xs text-muted-foreground">
+                    This scene has no TTS track yet (video-only playback).
+                  </span>
+                )}
+              </div>
 
               {/* Title */}
               <h1 className="mt-4 text-xl font-semibold text-foreground md:text-2xl">

@@ -77,3 +77,14 @@ export const videoAssetValidator = v.object({
   prompt: v.string(),
   generatedAt: v.number(),
 });
+
+export const ttsAssetValidator = v.object({
+  sceneNumber: v.number(),
+  sceneTitle: v.string(),
+  narrationText: v.string(),
+  audioUrl: v.string(),
+  voiceId: v.string(),
+  model: v.string(),
+  speed: v.number(),
+  generatedAt: v.number(),
+});

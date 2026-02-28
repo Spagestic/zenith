@@ -20,6 +20,7 @@ export {
   setTaskRendering,
   setTaskRendered,
   setTaskRenderedVideos,
+  setTaskTTSGenerated,
 } from "./workflowTasks.mutations";
 
 export {
@@ -28,4 +29,5 @@ export {
   generatePromptPack,
   generateSceneImages,
   generateSceneVideos,
+  generateSceneTTS,
 } from "./workflowTasks.actions";

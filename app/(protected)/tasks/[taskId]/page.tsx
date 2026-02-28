@@ -51,6 +51,7 @@ export default function TaskDetailsPage() {
   const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
   const generateSceneImages = useAction(api.workflowTasks.generateSceneImages);
   const generateSceneVideos = useAction(api.workflowTasks.generateSceneVideos);
+  const generateSceneTTS = useAction(api.workflowTasks.generateSceneTTS);
   const updateStoryTitle = useMutation(api.workflowTasks.updateStoryTitle);
 
   const [isRunning, setIsRunning] = useState(false);
@@ -98,6 +99,9 @@ export default function TaskDetailsPage() {
       } else if (!task.assets?.videos?.length) {
         await generateSceneVideos({ taskId: task._id });
         setMessage("Scene videos generated.");
+      } else if (!task.assets?.tts?.length) {
+        await generateSceneTTS({ taskId: task._id });
+        setMessage("Scene TTS generated.");
       }
     } catch (stageError) {
       setError(
@@ -115,6 +119,7 @@ export default function TaskDetailsPage() {
     if (!task.scenePrompts?.length) return "Generate Prompt Pack";
     if (!task.assets?.images?.length) return "Generate Scene Images";
     if (!task.assets?.videos?.length) return "Generate Scene Videos";
+    if (!task.assets?.tts?.length) return "Generate Scene TTS";
     return null;
   })();
 
@@ -449,6 +454,41 @@ export default function TaskDetailsPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Scene videos not generated yet.
+                </p>
+              )}
+            </section>
+
+            <section className="rounded-lg border p-4 space-y-2">
+              <h2 className="text-lg font-medium">TTS Assets</h2>
+              {task.assets?.tts?.length ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {task.assets.tts.length} scene narration tracks generated
+                  </p>
+                  <div className="space-y-3">
+                    {task.assets.tts.map((tts) => (
+                      <div
+                        key={`${tts.sceneNumber}-${tts.generatedAt}`}
+                        className="rounded-md border p-3 space-y-2"
+                      >
+                        <p className="text-sm font-medium">
+                          Scene {tts.sceneNumber}: {tts.sceneTitle}
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-4">
+                          {tts.narrationText}
+                        </p>
+                        <audio controls src={tts.audioUrl} className="w-full" />
+                        <p className="text-xs text-muted-foreground">
+                          Voice: {tts.voiceId} · Model: {tts.model} · Speed:{" "}
+                          {tts.speed}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Scene TTS not generated yet.
                 </p>
               )}
             </section>

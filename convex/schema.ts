@@ -187,6 +187,20 @@ export default defineSchema({
             }),
           ),
         ),
+        tts: v.optional(
+          v.array(
+            v.object({
+              sceneNumber: v.number(),
+              sceneTitle: v.string(),
+              narrationText: v.string(),
+              audioUrl: v.string(),
+              voiceId: v.string(),
+              model: v.string(),
+              speed: v.number(),
+              generatedAt: v.number(),
+            }),
+          ),
+        ),
       }),
     ),
     createdAt: v.number(),

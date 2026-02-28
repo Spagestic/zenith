@@ -117,6 +117,9 @@ export const getRenderedStoryById = query({
     const sceneVideos = (task.assets?.videos ?? [])
       .slice()
       .sort((a, b) => a.sceneNumber - b.sceneNumber);
+    const sceneTTS = (task.assets?.tts ?? [])
+      .slice()
+      .sort((a, b) => a.sceneNumber - b.sceneNumber);
     if (sceneVideos.length === 0) {
       return null;
     }
@@ -145,6 +148,13 @@ export const getRenderedStoryById = query({
         sceneTitle: video.sceneTitle,
         videoUrl: video.videoUrl,
         generatedAt: video.generatedAt,
+      })),
+      tts: sceneTTS.map((audio) => ({
+        sceneNumber: audio.sceneNumber,
+        sceneTitle: audio.sceneTitle,
+        narrationText: audio.narrationText,
+        audioUrl: audio.audioUrl,
+        generatedAt: audio.generatedAt,
       })),
     };
   },
