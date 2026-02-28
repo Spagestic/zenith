@@ -28,8 +28,9 @@ const footerLinks = {
 
 const Footer = () => {
   return (
-    <footer className="border-t border-border px-4">
-      <div className="container py-12 md:py-16">
+    <footer>
+      <div className="container px-4 md:px-10">
+        <div className="border-t border-border py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
@@ -105,6 +106,7 @@ const Footer = () => {
               Terms of Service
             </Link>
           </div>
+        </div>
         </div>
       </div>
     </footer>
