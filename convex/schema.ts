@@ -1,12 +1,11 @@
+// convex/schema.ts
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
-// The schema is normally optional, but Convex Auth
-// requires indexes defined on `authTables`.
-// The schema provides more precise TypeScript types.
 export default defineSchema({
   ...authTables,
+
   users: defineTable({
     email: v.optional(v.string()),
     emailVerificationTime: v.optional(v.float64()),
@@ -18,7 +17,51 @@ export default defineSchema({
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),
-  numbers: defineTable({
-    value: v.number(),
-  }),
+
+  // ============ ARTICLES ============
+  articles: defineTable({
+    title: v.string(),
+    slug: v.string(), // URL-friendly identifier
+    originalText: v.string(), // Source article (for reference)
+    kidSummary: v.string(), // AI-generated kid-friendly version
+    imageUrl: v.optional(v.string()),
+    audioUrl: v.optional(v.string()), // MiniMax TTS (stretch goal)
+    category: v.union(
+      v.literal("hong_kong"),
+      v.literal("world"),
+      v.literal("science"),
+      v.literal("nature"),
+      v.literal("tech"),
+      v.literal("sports"),
+    ),
+    sourceUrl: v.optional(v.string()),
+    sourceName: v.optional(v.string()),
+    publishedAt: v.number(),
+    readingTimeMinutes: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_category", ["category"])
+    .index("by_published", ["publishedAt"]),
+
+  // ============ QUIZZES ============
+  quizzes: defineTable({
+    articleId: v.id("articles"),
+    question: v.string(),
+    options: v.array(v.string()), // Always 4 options
+    correctIndex: v.number(), // 0, 1, 2, or 3
+    order: v.number(), // 1, 2, or 3 (question order)
+  }).index("by_article", ["articleId"]),
+
+  // ============ QUIZ ATTEMPTS ============
+  quizAttempts: defineTable({
+    quizId: v.id("quizzes"),
+    articleId: v.id("articles"),
+    userId: v.optional(v.id("users")), // null if anonymous
+    sessionId: v.string(), // anonymous tracking (localStorage uuid)
+    selectedIndex: v.number(),
+    isCorrect: v.boolean(),
+    completedAt: v.number(),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_article_session", ["articleId", "sessionId"]),
 });
