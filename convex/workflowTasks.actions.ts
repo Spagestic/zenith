@@ -18,6 +18,12 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isAdminRequest(adminKey: string | undefined): boolean {
+  const configuredKey = process.env.WORKFLOW_ADMIN_KEY;
+  if (!configuredKey || !adminKey) return false;
+  return configuredKey === adminKey;
+}
+
 function extractVideoTaskId(response: unknown): string | null {
   if (!response || typeof response !== "object") return null;
   const payload = response as { task_id?: unknown; taskId?: unknown };
@@ -73,10 +79,12 @@ export const runTaskIngestion = action({
   args: {
     taskId: v.id("workflowTasks"),
     autoContinue: v.optional(v.boolean()),
+    adminKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const isAdminCall = isAdminRequest(args.adminKey);
+    const userId = isAdminCall ? null : await getAuthUserId(ctx);
+    if (!isAdminCall && !userId) {
       throw new Error("Not authenticated");
     }
 
@@ -86,7 +94,7 @@ export const runTaskIngestion = action({
     if (!task) {
       throw new Error("Task not found");
     }
-    if (task.userId !== userId) {
+    if (!isAdminCall && task.userId !== userId) {
       throw new Error("Not authorized to run this task");
     }
 
@@ -164,6 +172,7 @@ export const runTaskIngestion = action({
       if (autoContinue) {
         await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
+          adminKey: args.adminKey,
         });
       }
 
@@ -187,10 +196,12 @@ export const generateStoryPlan = action({
   args: {
     taskId: v.id("workflowTasks"),
     autoContinue: v.optional(v.boolean()),
+    adminKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const isAdminCall = isAdminRequest(args.adminKey);
+    const userId = isAdminCall ? null : await getAuthUserId(ctx);
+    if (!isAdminCall && !userId) {
       throw new Error("Not authenticated");
     }
 
@@ -200,7 +211,7 @@ export const generateStoryPlan = action({
     if (!task) {
       throw new Error("Task not found");
     }
-    if (task.userId !== userId) {
+    if (!isAdminCall && task.userId !== userId) {
       throw new Error("Not authorized to plan this task");
     }
     if (task.sourceDocuments.length === 0) {
@@ -257,6 +268,7 @@ ${context}`,
       if (autoContinue) {
         await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
+          adminKey: args.adminKey,
         });
       }
 
@@ -281,10 +293,12 @@ export const generatePromptPack = action({
   args: {
     taskId: v.id("workflowTasks"),
     autoContinue: v.optional(v.boolean()),
+    adminKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const isAdminCall = isAdminRequest(args.adminKey);
+    const userId = isAdminCall ? null : await getAuthUserId(ctx);
+    if (!isAdminCall && !userId) {
       throw new Error("Not authenticated");
     }
 
@@ -294,7 +308,7 @@ export const generatePromptPack = action({
     if (!task) {
       throw new Error("Task not found");
     }
-    if (task.userId !== userId) {
+    if (!isAdminCall && task.userId !== userId) {
       throw new Error("Not authorized to prompt this task");
     }
     if (!task.storyPlan || task.storyPlan.scenes.length === 0) {
@@ -398,6 +412,7 @@ ${response.text}`,
       if (autoContinue) {
         await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
+          adminKey: args.adminKey,
         });
       }
 
@@ -425,10 +440,12 @@ export const generateSceneImages = action({
     model: v.optional(v.string()),
     aspectRatio: v.optional(v.string()),
     autoContinue: v.optional(v.boolean()),
+    adminKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const isAdminCall = isAdminRequest(args.adminKey);
+    const userId = isAdminCall ? null : await getAuthUserId(ctx);
+    if (!isAdminCall && !userId) {
       throw new Error("Not authenticated");
     }
 
@@ -438,7 +455,7 @@ export const generateSceneImages = action({
     if (!task) {
       throw new Error("Task not found");
     }
-    if (task.userId !== userId) {
+    if (!isAdminCall && task.userId !== userId) {
       throw new Error("Not authorized to render this task");
     }
     if (!task.scenePrompts || task.scenePrompts.length === 0) {
@@ -509,6 +526,7 @@ export const generateSceneImages = action({
       if (autoContinue) {
         await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
+          adminKey: args.adminKey,
         });
       }
 
@@ -539,10 +557,12 @@ export const generateSceneVideos = action({
     pollIntervalMs: v.optional(v.number()),
     maxPollAttempts: v.optional(v.number()),
     autoContinue: v.optional(v.boolean()),
+    adminKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const isAdminCall = isAdminRequest(args.adminKey);
+    const userId = isAdminCall ? null : await getAuthUserId(ctx);
+    if (!isAdminCall && !userId) {
       throw new Error("Not authenticated");
     }
 
@@ -552,7 +572,7 @@ export const generateSceneVideos = action({
     if (!task) {
       throw new Error("Task not found");
     }
-    if (task.userId !== userId) {
+    if (!isAdminCall && task.userId !== userId) {
       throw new Error("Not authorized to render videos for this task");
     }
     if (!task.assets?.images?.length) {
@@ -692,6 +712,7 @@ export const generateSceneVideos = action({
       if (autoContinue) {
         await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
+          adminKey: args.adminKey,
         });
       }
 
@@ -720,10 +741,12 @@ export const generateSceneTTS = action({
     voiceId: v.optional(v.string()),
     speed: v.optional(v.number()),
     autoContinue: v.optional(v.boolean()),
+    adminKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const isAdminCall = isAdminRequest(args.adminKey);
+    const userId = isAdminCall ? null : await getAuthUserId(ctx);
+    if (!isAdminCall && !userId) {
       throw new Error("Not authenticated");
     }
 
@@ -733,7 +756,7 @@ export const generateSceneTTS = action({
     if (!task) {
       throw new Error("Task not found");
     }
-    if (task.userId !== userId) {
+    if (!isAdminCall && task.userId !== userId) {
       throw new Error("Not authorized to generate TTS for this task");
     }
     if (!task.storyPlan?.script?.length) {
@@ -826,10 +849,12 @@ export const generateSceneTTS = action({
 export const runWorkflowTask = action({
   args: {
     taskId: v.id("workflowTasks"),
+    adminKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    const isAdminCall = isAdminRequest(args.adminKey);
+    const userId = isAdminCall ? null : await getAuthUserId(ctx);
+    if (!isAdminCall && !userId) {
       throw new Error("Not authenticated");
     }
 
@@ -839,7 +864,7 @@ export const runWorkflowTask = action({
     if (!task) {
       throw new Error("Task not found");
     }
-    if (task.userId !== userId) {
+    if (!isAdminCall && task.userId !== userId) {
       throw new Error("Not authorized to run this task");
     }
 
@@ -847,6 +872,7 @@ export const runWorkflowTask = action({
       await ctx.runAction(api.workflowTasks.runTaskIngestion, {
         taskId: args.taskId,
         autoContinue: false,
+        adminKey: args.adminKey,
       });
       return { status: "started", stage: "ingestion" as const };
     }
@@ -854,6 +880,7 @@ export const runWorkflowTask = action({
       await ctx.runAction(api.workflowTasks.generateStoryPlan, {
         taskId: args.taskId,
         autoContinue: false,
+        adminKey: args.adminKey,
       });
       return { status: "started", stage: "planning" as const };
     }
@@ -861,6 +888,7 @@ export const runWorkflowTask = action({
       await ctx.runAction(api.workflowTasks.generatePromptPack, {
         taskId: args.taskId,
         autoContinue: false,
+        adminKey: args.adminKey,
       });
       return { status: "started", stage: "prompting" as const };
     }
@@ -868,6 +896,7 @@ export const runWorkflowTask = action({
       await ctx.runAction(api.workflowTasks.generateSceneImages, {
         taskId: args.taskId,
         autoContinue: false,
+        adminKey: args.adminKey,
       });
       return { status: "started", stage: "images" as const };
     }
@@ -875,6 +904,7 @@ export const runWorkflowTask = action({
       await ctx.runAction(api.workflowTasks.generateSceneVideos, {
         taskId: args.taskId,
         autoContinue: false,
+        adminKey: args.adminKey,
       });
       return { status: "started", stage: "videos" as const };
     }
@@ -882,6 +912,7 @@ export const runWorkflowTask = action({
       await ctx.runAction(api.workflowTasks.generateSceneTTS, {
         taskId: args.taskId,
         autoContinue: false,
+        adminKey: args.adminKey,
       });
       return { status: "started", stage: "tts" as const };
     }
