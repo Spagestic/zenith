@@ -74,12 +74,16 @@ export default defineSchema({
       v.literal("queued"),
       v.literal("ingesting"),
       v.literal("ingested"),
+      v.literal("planning"),
+      v.literal("planned"),
       v.literal("failed"),
     ),
     stage: v.union(
       v.literal("created"),
       v.literal("ingesting"),
       v.literal("ingested"),
+      v.literal("planning"),
+      v.literal("planned"),
       v.literal("failed"),
     ),
     progress: v.optional(v.number()), // 0-100
@@ -94,6 +98,39 @@ export default defineSchema({
         text: v.optional(v.string()),
         summary: v.optional(v.string()),
         highlights: v.optional(v.array(v.string())),
+      }),
+    ),
+    storyPlan: v.optional(
+      v.object({
+        scenes: v.array(
+          v.object({
+            sceneNumber: v.number(),
+            title: v.string(),
+            summary: v.string(),
+            visualTone: v.string(),
+            durationSeconds: v.number(),
+          }),
+        ),
+        script: v.array(
+          v.object({
+            sceneNumber: v.number(),
+            narration: v.string(),
+            dialogue: v.array(
+              v.object({
+                character: v.string(),
+                line: v.string(),
+              }),
+            ),
+          }),
+        ),
+        characters: v.array(
+          v.object({
+            name: v.string(),
+            description: v.string(),
+            voiceStyle: v.string(),
+          }),
+        ),
+        musicStyle: v.string(),
       }),
     ),
     createdAt: v.number(),

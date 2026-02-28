@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -20,9 +21,17 @@ type CreateTaskDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-function statusVariant(status: "queued" | "ingesting" | "ingested" | "failed") {
+function statusVariant(
+  status:
+    | "queued"
+    | "ingesting"
+    | "ingested"
+    | "planning"
+    | "planned"
+    | "failed",
+) {
   if (status === "failed") return "destructive";
-  if (status === "ingested") return "secondary";
+  if (status === "planned") return "secondary";
   return "outline";
 }
 
@@ -37,9 +46,12 @@ export function CreateTaskDialog({
   );
   const createTask = useMutation(api.workflowTasks.createTask);
   const runTaskIngestion = useAction(api.workflowTasks.runTaskIngestion);
+  const generateStoryPlan = useAction(api.workflowTasks.generateStoryPlan);
 
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [planningTaskId, setPlanningTaskId] =
+    useState<Id<"workflowTasks"> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -82,6 +94,24 @@ export function CreateTaskDialog({
       setError(submitMessage);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const onGenerateStoryPlan = async (taskId: Id<"workflowTasks">) => {
+    setPlanningTaskId(taskId);
+    setError(null);
+    setMessage(null);
+    try {
+      await generateStoryPlan({ taskId });
+      setMessage("Story plan generated.");
+    } catch (planningError) {
+      const planningMessage =
+        planningError instanceof Error
+          ? planningError.message
+          : "Story planning failed";
+      setError(planningMessage);
+    } finally {
+      setPlanningTaskId(null);
     }
   };
 
@@ -139,6 +169,23 @@ export function CreateTaskDialog({
                     </span>
                   </div>
                   <p className="truncate text-muted-foreground">{task.input}</p>
+                  {(task.status === "ingested" ||
+                    task.status === "planned") && (
+                    <div className="pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={planningTaskId === task._id}
+                        onClick={() => onGenerateStoryPlan(task._id)}
+                      >
+                        {planningTaskId === task._id
+                          ? "Planning..."
+                          : task.status === "planned"
+                            ? "Regenerate Story Plan"
+                            : "Generate Story Plan"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
