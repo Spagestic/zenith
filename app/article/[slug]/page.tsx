@@ -1,6 +1,7 @@
 // app/article/[slug]/page.tsx
 import { Metadata } from "next";
 import { ArticleContent } from "./_components/ArticleContent";
+import Header from "@/components/Header";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -17,5 +18,10 @@ export async function generateMetadata({
 
 export default async function ArticlePage({ params }: PageProps) {
   const { slug } = await params;
-  return <ArticleContent slug={slug} />;
+  return (
+    <>
+      <Header />
+      <ArticleContent slug={slug} />
+    </>
+  );
 }
