@@ -162,9 +162,8 @@ export const runTaskIngestion = action({
       });
 
       if (autoContinue) {
-        await ctx.runAction(api.workflowTasks.generateStoryPlan, {
+        await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
-          autoContinue: true,
         });
       }
 
@@ -256,9 +255,8 @@ ${context}`,
       });
 
       if (autoContinue) {
-        await ctx.runAction(api.workflowTasks.generatePromptPack, {
+        await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
-          autoContinue: true,
         });
       }
 
@@ -398,9 +396,8 @@ ${response.text}`,
       });
 
       if (autoContinue) {
-        await ctx.runAction(api.workflowTasks.generateSceneImages, {
+        await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
-          autoContinue: true,
         });
       }
 
@@ -510,9 +507,8 @@ export const generateSceneImages = action({
       });
 
       if (autoContinue) {
-        await ctx.runAction(api.workflowTasks.generateSceneVideos, {
+        await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
-          autoContinue: true,
         });
       }
 
@@ -694,9 +690,8 @@ export const generateSceneVideos = action({
       });
 
       if (autoContinue) {
-        await ctx.runAction(api.workflowTasks.generateSceneTTS, {
+        await ctx.scheduler.runAfter(0, api.workflowTasks.runWorkflowTask, {
           taskId: args.taskId,
-          autoContinue: true,
         });
       }
 
@@ -851,42 +846,42 @@ export const runWorkflowTask = action({
     if (task.sourceDocuments.length === 0) {
       await ctx.runAction(api.workflowTasks.runTaskIngestion, {
         taskId: args.taskId,
-        autoContinue: true,
+        autoContinue: false,
       });
       return { status: "started", stage: "ingestion" as const };
     }
     if (!task.storyPlan) {
       await ctx.runAction(api.workflowTasks.generateStoryPlan, {
         taskId: args.taskId,
-        autoContinue: true,
+        autoContinue: false,
       });
       return { status: "started", stage: "planning" as const };
     }
     if (!task.scenePrompts?.length) {
       await ctx.runAction(api.workflowTasks.generatePromptPack, {
         taskId: args.taskId,
-        autoContinue: true,
+        autoContinue: false,
       });
       return { status: "started", stage: "prompting" as const };
     }
     if (!task.assets?.images?.length) {
       await ctx.runAction(api.workflowTasks.generateSceneImages, {
         taskId: args.taskId,
-        autoContinue: true,
+        autoContinue: false,
       });
       return { status: "started", stage: "images" as const };
     }
     if (!task.assets?.videos?.length) {
       await ctx.runAction(api.workflowTasks.generateSceneVideos, {
         taskId: args.taskId,
-        autoContinue: true,
+        autoContinue: false,
       });
       return { status: "started", stage: "videos" as const };
     }
     if (!task.assets?.tts?.length) {
       await ctx.runAction(api.workflowTasks.generateSceneTTS, {
         taskId: args.taskId,
-        autoContinue: true,
+        autoContinue: false,
       });
       return { status: "started", stage: "tts" as const };
     }
