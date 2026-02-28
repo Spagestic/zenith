@@ -1,5 +1,7 @@
 import type { ExaSearchRequest, ContentsOptions } from "@/types/exa";
 
+import type { ExaScrapeRequest } from "@/types/exa";
+
 /**
  * Get highlights-optimized search config for agentic workflows
  * Provides token-efficient excerpts perfect for multi-step agents
@@ -182,4 +184,121 @@ export function getCombinedContentsConfig(
       verbosity: "standard",
     },
   };
+}
+
+/**
+ * Get basic scrape config with highlights
+ * Good for quick content extraction
+ */
+export function getBasicScrapeConfig(
+  url: string,
+  maxCharacters: number = 4000,
+): ExaScrapeRequest {
+  return {
+    url,
+    highlights: {
+      maxCharacters,
+    },
+  };
+}
+
+/**
+ * Get full text scrape config
+ * For comprehensive content extraction
+ */
+export function getFullTextScrapeConfig(
+  url: string,
+  maxCharacters?: number,
+  verbosity: "compact" | "standard" | "full" = "standard",
+): ExaScrapeRequest {
+  return {
+    url,
+    text: {
+      ...(maxCharacters && { maxCharacters }),
+      verbosity,
+    },
+  };
+}
+
+/**
+ * Get summary scrape config
+ * For quick overviews
+ */
+export function getSummaryScrapeConfig(
+  url: string,
+  query?: string,
+): ExaScrapeRequest {
+  return {
+    url,
+    summary: query ? { query } : true,
+  };
+}
+
+/**
+ * Get comprehensive scrape config
+ * Includes text, highlights, and summary
+ */
+export function getComprehensiveScrapeConfig(
+  url: string,
+  textChars: number = 15000,
+  highlightChars: number = 4000,
+): ExaScrapeRequest {
+  return {
+    url,
+    text: {
+      maxCharacters: textChars,
+      verbosity: "standard",
+    },
+    highlights: {
+      maxCharacters: highlightChars,
+    },
+    summary: true,
+  };
+}
+
+/**
+ * Get real-time scrape config with livecrawl
+ * Always fetches fresh content
+ */
+export function getLiveScrapeConfig(
+  url: string,
+  includeText: boolean = true,
+): ExaScrapeRequest {
+  return {
+    url,
+    livecrawl: true,
+    maxAgeHours: 0,
+    ...(includeText
+      ? { text: { maxCharacters: 15000 } }
+      : { highlights: { maxCharacters: 4000 } }),
+  };
+}
+
+/**
+ * Get multiple URL scrape config
+ */
+export function getMultiUrlScrapeConfig(
+  urls: string[],
+  contentType: "text" | "highlights" | "summary" | "all" = "highlights",
+): ExaScrapeRequest {
+  const config: ExaScrapeRequest = { urls };
+
+  switch (contentType) {
+    case "text":
+      config.text = { maxCharacters: 15000, verbosity: "standard" };
+      break;
+    case "highlights":
+      config.highlights = { maxCharacters: 4000 };
+      break;
+    case "summary":
+      config.summary = true;
+      break;
+    case "all":
+      config.text = { maxCharacters: 15000, verbosity: "standard" };
+      config.highlights = { maxCharacters: 4000 };
+      config.summary = true;
+      break;
+  }
+
+  return config;
 }

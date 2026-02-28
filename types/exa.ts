@@ -113,3 +113,53 @@ export interface ExaResult {
   highlightScores?: number[];
   summary?: string;
 }
+
+// ... previous types ...
+
+export interface ExaScrapeRequest {
+  url?: string; // Single URL
+  urls?: string[]; // Multiple URLs
+  text?: boolean | TextOptions;
+  highlights?: boolean | HighlightsOptions;
+  summary?: boolean | SummaryOptions;
+  maxAgeHours?: number;
+  livecrawl?: boolean;
+}
+
+export interface ExaBatchScrapeRequest {
+  urls: string[];
+  text?: boolean | TextOptions;
+  highlights?: boolean | HighlightsOptions;
+  summary?: boolean | SummaryOptions;
+  maxAgeHours?: number;
+  batchSize?: number;
+}
+
+export interface ExaScrapeResponse {
+  results: ExaScrapedContent[];
+}
+
+export interface ExaScrapedContent {
+  url: string;
+  id: string;
+  title?: string;
+  author?: string;
+  publishedDate?: string;
+  text?: string;
+  highlights?: string[];
+  highlightScores?: number[];
+  summary?: string;
+}
+
+export interface ExaBatchScrapeResponse {
+  success: boolean;
+  totalUrls: number;
+  successfulScrapes: number;
+  failedBatches: number;
+  results: ExaScrapedContent[];
+  errors?: Array<{
+    batch: number;
+    urls: string[];
+    error: string;
+  }>;
+}
