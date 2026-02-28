@@ -49,6 +49,7 @@ export default function TaskDetailsPage() {
   const generateStoryPlan = useAction(api.workflowTasks.generateStoryPlan);
   const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
   const generateSceneImages = useAction(api.workflowTasks.generateSceneImages);
+  const generateSceneVideos = useAction(api.workflowTasks.generateSceneVideos);
 
   const [isRunning, setIsRunning] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -73,6 +74,9 @@ export default function TaskDetailsPage() {
       } else if (!task.assets?.images?.length) {
         await generateSceneImages({ taskId: task._id });
         setMessage("Scene images generated.");
+      } else if (!task.assets?.videos?.length) {
+        await generateSceneVideos({ taskId: task._id });
+        setMessage("Scene videos generated.");
       }
     } catch (stageError) {
       setError(
@@ -89,6 +93,7 @@ export default function TaskDetailsPage() {
     if (!task.storyPlan) return "Generate Story Plan";
     if (!task.scenePrompts?.length) return "Generate Prompt Pack";
     if (!task.assets?.images?.length) return "Generate Scene Images";
+    if (!task.assets?.videos?.length) return "Generate Scene Videos";
     return null;
   })();
 
@@ -291,6 +296,46 @@ export default function TaskDetailsPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Scene images not generated yet.
+                </p>
+              )}
+            </section>
+
+            <section className="rounded-lg border p-4 space-y-2">
+              <h2 className="text-lg font-medium">Video Assets</h2>
+              {task.assets?.videos?.length ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {task.assets.videos.length} scene videos generated
+                  </p>
+                  <div className="space-y-3">
+                    {task.assets.videos.map((video) => (
+                      <div
+                        key={`${video.sceneNumber}-${video.taskId}`}
+                        className="rounded-md border p-3 space-y-2"
+                      >
+                        <p className="text-sm font-medium">
+                          Scene {video.sceneNumber}: {video.sceneTitle}
+                        </p>
+                        <video
+                          controls
+                          className="w-full max-w-xl rounded-md border"
+                          src={video.videoUrl}
+                        />
+                        <a
+                          href={video.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-muted-foreground break-all underline"
+                        >
+                          Open video URL
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Scene videos not generated yet.
                 </p>
               )}
             </section>

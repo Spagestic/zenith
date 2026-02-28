@@ -16,6 +16,7 @@ export {
   setTaskPrompted,
   setTaskRendering,
   setTaskRendered,
+  setTaskRenderedVideos,
 } from "./workflowTasks.mutations";
 
 export {
@@ -23,4 +24,5 @@ export {
   generateStoryPlan,
   generatePromptPack,
   generateSceneImages,
+  generateSceneVideos,
 } from "./workflowTasks.actions";

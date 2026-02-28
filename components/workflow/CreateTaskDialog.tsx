@@ -61,6 +61,7 @@ export function CreateTaskDialog({
   const generateStoryPlan = useAction(api.workflowTasks.generateStoryPlan);
   const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
   const generateSceneImages = useAction(api.workflowTasks.generateSceneImages);
+  const generateSceneVideos = useAction(api.workflowTasks.generateSceneVideos);
 
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,6 +71,9 @@ export function CreateTaskDialog({
     useState<Id<"workflowTasks"> | null>(null);
   const [renderingTaskId, setRenderingTaskId] =
     useState<Id<"workflowTasks"> | null>(null);
+  const [videoTaskId, setVideoTaskId] = useState<Id<"workflowTasks"> | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -169,6 +173,24 @@ export function CreateTaskDialog({
     }
   };
 
+  const onGenerateSceneVideos = async (taskId: Id<"workflowTasks">) => {
+    setVideoTaskId(taskId);
+    setError(null);
+    setMessage(null);
+    try {
+      await generateSceneVideos({ taskId });
+      setMessage("Scene videos generated.");
+    } catch (videoError) {
+      const videoMessage =
+        videoError instanceof Error
+          ? videoError.message
+          : "Scene video generation failed";
+      setError(videoMessage);
+    } finally {
+      setVideoTaskId(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
@@ -230,6 +252,9 @@ export function CreateTaskDialog({
                       {task.assets?.images?.length
                         ? ` • ${task.assets.images.length} image pairs`
                         : ""}
+                      {task.assets?.videos?.length
+                        ? ` • ${task.assets.videos.length} videos`
+                        : ""}
                     </span>
                   </div>
                   <p className="truncate text-muted-foreground">{task.input}</p>
@@ -283,7 +308,8 @@ export function CreateTaskDialog({
                           disabled={
                             promptingTaskId === task._id ||
                             planningTaskId === task._id ||
-                            renderingTaskId === task._id
+                            renderingTaskId === task._id ||
+                            videoTaskId === task._id
                           }
                           onClick={(event) => {
                             event.stopPropagation();
@@ -306,7 +332,8 @@ export function CreateTaskDialog({
                           disabled={
                             renderingTaskId === task._id ||
                             promptingTaskId === task._id ||
-                            planningTaskId === task._id
+                            planningTaskId === task._id ||
+                            videoTaskId === task._id
                           }
                           onClick={(event) => {
                             event.stopPropagation();
@@ -327,7 +354,8 @@ export function CreateTaskDialog({
                         disabled={
                           renderingTaskId === task._id ||
                           promptingTaskId === task._id ||
-                          planningTaskId === task._id
+                          planningTaskId === task._id ||
+                          videoTaskId === task._id
                         }
                         onClick={(event) => {
                           event.stopPropagation();
@@ -340,6 +368,30 @@ export function CreateTaskDialog({
                       </Button>
                     </div>
                   )}
+                  {(task.status === "rendered" || task.status === "failed") &&
+                    !!task.assets?.images?.length &&
+                    !task.assets?.videos?.length && (
+                      <div className="pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={
+                            videoTaskId === task._id ||
+                            renderingTaskId === task._id ||
+                            promptingTaskId === task._id ||
+                            planningTaskId === task._id
+                          }
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void onGenerateSceneVideos(task._id);
+                          }}
+                        >
+                          {videoTaskId === task._id
+                            ? "Generating Videos..."
+                            : "Generate Scene Videos"}
+                        </Button>
+                      </div>
+                    )}
                 </div>
               ))
             ) : (

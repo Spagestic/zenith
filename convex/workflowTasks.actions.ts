@@ -10,7 +10,33 @@ import {
   parsePromptPack,
   parseStoryPlan,
   type ImageAsset,
+  type VideoAsset,
 } from "./workflow/helpers";
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function extractVideoTaskId(response: unknown): string | null {
+  if (!response || typeof response !== "object") return null;
+  const payload = response as { task_id?: unknown; taskId?: unknown };
+  if (typeof payload.task_id === "string") return payload.task_id;
+  if (typeof payload.taskId === "string") return payload.taskId;
+  return null;
+}
+
+function extractVideoUrl(result: unknown): string | null {
+  if (!result || typeof result !== "object") return null;
+  const payload = result as {
+    download_url?: unknown;
+    file_details?: { download_url?: unknown };
+  };
+  if (typeof payload.download_url === "string") return payload.download_url;
+  if (typeof payload.file_details?.download_url === "string") {
+    return payload.file_details.download_url;
+  }
+  return null;
+}
 
 export const runTaskIngestion = action({
   args: {
@@ -257,8 +283,10 @@ Requirements:
 - Keep character consistency across scenes.
 - Each prompt should be production-ready for image/video generation.
 - transitionPrompt should describe how to move from this scene to the next scene.
-- Visual style target: Adventure Time cartoon style (flat 2D shapes, playful outlines, vibrant but clean colors, whimsical fantasy mood).
-- Include this exact style phrase in imagePrompt, startFramePrompt, and endFramePrompt: "Adventure Time cartoon style".
+- Visual style target: whimsical flat 2D fantasy cartoon aesthetic inspired by modern TV animation.
+- Keep recurring character design anchors in every scene prompt (silhouette, outfit colors, hairstyle, accessories).
+- Use only original characters and original locations.
+- Do NOT include brand names, franchise names, logos, or copyrighted character names.
 
 Story plan:
 ${storyPlanJson}`,
@@ -363,7 +391,7 @@ export const generateSceneImages = action({
     try {
       const images: ImageAsset[] = [];
       const styleSuffix =
-        " Adventure Time cartoon style, flat 2D animation, bold clean outlines, whimsical fantasy, vibrant colors.";
+        " Whimsical flat 2D fantasy cartoon aesthetic, bold clean outlines, vibrant colors, consistent original characters across scenes, no brand names, no logos, no copyrighted characters.";
 
       for (const scene of task.scenePrompts) {
         const startPrompt = `${scene.startFramePrompt}${styleSuffix}`;
@@ -422,6 +450,181 @@ export const generateSceneImages = action({
         error instanceof Error
           ? error.message
           : "Scene image generation failed";
+      await ctx.runMutation(internal.workflowTasks.setTaskFailed, {
+        taskId: args.taskId,
+        error: message,
+      });
+      throw new Error(message);
+    }
+  },
+});
+
+export const generateSceneVideos = action({
+  args: {
+    taskId: v.id("workflowTasks"),
+    model: v.optional(v.string()),
+    duration: v.optional(v.number()),
+    resolution: v.optional(v.string()),
+    pollIntervalMs: v.optional(v.number()),
+    maxPollAttempts: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const task = await ctx.runQuery(internal.workflowTasks.getTaskInternal, {
+      taskId: args.taskId,
+    });
+    if (!task) {
+      throw new Error("Task not found");
+    }
+    if (task.userId !== userId) {
+      throw new Error("Not authorized to render videos for this task");
+    }
+    if (!task.assets?.images?.length) {
+      throw new Error("Task has no image pairs. Generate scene images first.");
+    }
+
+    await ctx.runMutation(internal.workflowTasks.setTaskRendering, {
+      taskId: args.taskId,
+    });
+
+    const preferredModel = args.model ?? "MiniMax-Hailuo-02";
+    const duration = args.duration ?? 6;
+    const resolution = args.resolution;
+    const pollIntervalMs = args.pollIntervalMs ?? 3000;
+    const maxPollAttempts = args.maxPollAttempts ?? 40;
+
+    try {
+      const videos: VideoAsset[] = [];
+
+      for (const imagePair of task.assets.images) {
+        const videoPrompt = `${imagePair.sceneTitle}. Smooth animated transition in a whimsical flat 2D fantasy cartoon aesthetic with consistent original characters, no logos, no brand names, no copyrighted characters.`;
+        const modelCandidates = Array.from(
+          new Set(
+            [
+              preferredModel === "MiniMax-Hailuo-2.3"
+                ? "MiniMax-Hailuo-02"
+                : preferredModel,
+              "MiniMax-Hailuo-02",
+            ].filter((m): m is string => !!m),
+          ),
+        );
+
+        let createRes: unknown = null;
+        let modelUsed = modelCandidates[0];
+        let createError: unknown = null;
+        for (const candidate of modelCandidates) {
+          try {
+            createRes = await ctx.runAction(api.minimax.generateVideo, {
+              model: candidate,
+              duration,
+              resolution,
+              prompt: videoPrompt,
+              first_frame_image: imagePair.startImageUrl,
+              last_frame_image: imagePair.endImageUrl,
+              prompt_optimizer: false,
+            });
+            modelUsed = candidate;
+            createError = null;
+            break;
+          } catch (error) {
+            createError = error;
+            const message = error instanceof Error ? error.message : String(error);
+            if (
+              !message.includes(
+                "does not support First-and-Last-Frame-Video mode",
+              )
+            ) {
+              throw error;
+            }
+          }
+        }
+        if (createError || !createRes) {
+          throw (
+            createError ??
+            new Error(
+              `No compatible model available for first/last-frame video mode (scene ${imagePair.sceneNumber})`,
+            )
+          );
+        }
+
+        const videoTaskId = extractVideoTaskId(createRes);
+        if (!videoTaskId) {
+          throw new Error(
+            `Video task id missing for scene ${imagePair.sceneNumber}`,
+          );
+        }
+
+        let finalResult: unknown = null;
+        for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
+          const queryRes = await ctx.runAction(api.minimax.queryVideoTask, {
+            task_id: videoTaskId,
+          });
+          finalResult = queryRes;
+          const queryObj = queryRes as {
+            status?: string;
+            base_resp?: { status_code?: number; status_msg?: string };
+          };
+
+          if (
+            queryObj.base_resp?.status_code &&
+            queryObj.base_resp.status_code !== 0
+          ) {
+            throw new Error(
+              queryObj.base_resp.status_msg ??
+                `Video generation failed for scene ${imagePair.sceneNumber}`,
+            );
+          }
+
+          if (queryObj.status === "Success") {
+            break;
+          }
+          if (queryObj.status === "Fail" || queryObj.status === "Failed") {
+            throw new Error(
+              `Video generation failed for scene ${imagePair.sceneNumber}`,
+            );
+          }
+
+          await sleep(pollIntervalMs);
+        }
+
+        const videoUrl = extractVideoUrl(finalResult);
+        if (!videoUrl) {
+          throw new Error(
+            `Video URL not available for scene ${imagePair.sceneNumber} after polling`,
+          );
+        }
+
+        videos.push({
+          sceneNumber: imagePair.sceneNumber,
+          sceneTitle: imagePair.sceneTitle,
+          videoUrl,
+          taskId: videoTaskId,
+          model: modelUsed,
+          duration,
+          resolution,
+          prompt: videoPrompt,
+          generatedAt: Date.now(),
+        });
+      }
+
+      await ctx.runMutation(internal.workflowTasks.setTaskRenderedVideos, {
+        taskId: args.taskId,
+        videos,
+      });
+
+      return {
+        status: "rendered",
+        videoCount: videos.length,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Scene video generation failed";
       await ctx.runMutation(internal.workflowTasks.setTaskFailed, {
         taskId: args.taskId,
         error: message,

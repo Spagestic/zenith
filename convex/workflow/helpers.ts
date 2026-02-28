@@ -49,6 +49,18 @@ export type ImageAsset = {
   generatedAt: number;
 };
 
+export type VideoAsset = {
+  sceneNumber: number;
+  sceneTitle: string;
+  videoUrl: string;
+  taskId: string;
+  model: string;
+  duration: number;
+  resolution?: string;
+  prompt: string;
+  generatedAt: number;
+};
+
 export function detectInputType(input: string): "url" | "topic" {
   try {
     const candidate = new URL(input);

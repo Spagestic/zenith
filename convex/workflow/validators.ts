@@ -65,3 +65,15 @@ export const imageAssetValidator = v.object({
   aspectRatio: v.string(),
   generatedAt: v.number(),
 });
+
+export const videoAssetValidator = v.object({
+  sceneNumber: v.number(),
+  sceneTitle: v.string(),
+  videoUrl: v.string(),
+  taskId: v.string(),
+  model: v.string(),
+  duration: v.number(),
+  resolution: v.optional(v.string()),
+  prompt: v.string(),
+  generatedAt: v.number(),
+});

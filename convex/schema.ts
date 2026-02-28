@@ -171,6 +171,21 @@ export default defineSchema({
             generatedAt: v.number(),
           }),
         ),
+        videos: v.optional(
+          v.array(
+            v.object({
+              sceneNumber: v.number(),
+              sceneTitle: v.string(),
+              videoUrl: v.string(),
+              taskId: v.string(),
+              model: v.string(),
+              duration: v.number(),
+              resolution: v.optional(v.string()),
+              prompt: v.string(),
+              generatedAt: v.number(),
+            }),
+          ),
+        ),
       }),
     ),
     createdAt: v.number(),

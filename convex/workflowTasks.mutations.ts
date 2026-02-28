@@ -7,6 +7,7 @@ import {
   scenePromptValidator,
   sourceDocumentValidator,
   storyPlanValidator,
+  videoAssetValidator,
 } from "./workflow/validators";
 
 export const createTask = mutation({
@@ -183,6 +184,29 @@ export const setTaskRendered = internalMutation({
       stage: "rendered",
       progress: 100,
       assets: { images: args.images },
+      error: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const setTaskRenderedVideos = internalMutation({
+  args: {
+    taskId: v.id("workflowTasks"),
+    videos: v.array(videoAssetValidator),
+  },
+  handler: async (ctx, args) => {
+    const task = await ctx.db.get(args.taskId);
+    const existingImages = task?.assets?.images ?? [];
+
+    await ctx.db.patch(args.taskId, {
+      status: "rendered",
+      stage: "rendered",
+      progress: 100,
+      assets: {
+        images: existingImages,
+        videos: args.videos,
+      },
       error: undefined,
       updatedAt: Date.now(),
     });
