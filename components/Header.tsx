@@ -6,7 +6,24 @@ import Link from "next/link";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "./user-avatar";
-import { Search } from "lucide-react";
+import {
+  Search,
+  ChevronDown,
+  Earth,
+  DollarSign,
+  Atom,
+  Dumbbell,
+  Palette,
+  Tv,
+  MapPin,
+} from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Header() {
   const [search, setSearch] = useState("");
@@ -27,6 +44,53 @@ export default function Header() {
             Zenith
           </span>
         </Link>
+        <Tabs defaultValue="overview">
+          <TabsList variant="line">
+            <TabsTrigger value="overview">For You</TabsTrigger>
+            <TabsTrigger value="analytics">Top</TabsTrigger>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <TabsTrigger
+                  value="reports"
+                  className="flex items-center gap-1"
+                >
+                  Topics <ChevronDown className="h-3 w-3" />
+                </TabsTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem>
+                  <MapPin className=" h-4 w-4" />
+                  HK Local
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Earth className=" h-4 w-4" />
+                  World
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <DollarSign className=" h-4 w-4" />
+                  Business
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Atom className=" h-4 w-4" />
+                  Tech & Science
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Dumbbell className=" h-4 w-4" />
+                  Sports
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Palette className=" h-4 w-4" />
+                  Art & Culture
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Tv className=" h-4 w-4" />
+                  Entertainment
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </TabsList>
+        </Tabs>
 
         {/* Desktop search */}
         <div className="relative hidden w-full max-w-md md:block">
