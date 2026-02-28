@@ -79,7 +79,7 @@ export function ArticleContent({ slug }: ArticleContentProps) {
     <div className="min-h-screen bg-linear-to-b from-sky-50 to-white">
       <main className="max-w-3xl mx-auto px-4 py-8">
         {/* Main Article Card */}
-        <Card className="overflow-hidden border-border shadow-lg mb-8">
+        <Card className="pt-0 overflow-hidden border-border shadow-lg mb-8">
           {/* Hero Image */}
           {article.imageUrl && (
             <div className="relative aspect-video w-full overflow-hidden bg-muted">
