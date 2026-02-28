@@ -76,6 +76,8 @@ export default defineSchema({
       v.literal("ingested"),
       v.literal("planning"),
       v.literal("planned"),
+      v.literal("prompting"),
+      v.literal("prompted"),
       v.literal("failed"),
     ),
     stage: v.union(
@@ -84,6 +86,8 @@ export default defineSchema({
       v.literal("ingested"),
       v.literal("planning"),
       v.literal("planned"),
+      v.literal("prompting"),
+      v.literal("prompted"),
       v.literal("failed"),
     ),
     progress: v.optional(v.number()), // 0-100
@@ -132,6 +136,21 @@ export default defineSchema({
         ),
         musicStyle: v.string(),
       }),
+    ),
+    scenePrompts: v.optional(
+      v.array(
+        v.object({
+          sceneNumber: v.number(),
+          sceneTitle: v.string(),
+          imagePrompt: v.string(),
+          startFramePrompt: v.string(),
+          endFramePrompt: v.string(),
+          transitionPrompt: v.string(),
+          negativePrompt: v.optional(v.string()),
+          camera: v.optional(v.string()),
+          style: v.optional(v.string()),
+        }),
+      ),
     ),
     createdAt: v.number(),
     updatedAt: v.number(),

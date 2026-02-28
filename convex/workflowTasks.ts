@@ -51,6 +51,18 @@ const storyPlanValidator = v.object({
   musicStyle: v.string(),
 });
 
+const scenePromptValidator = v.object({
+  sceneNumber: v.number(),
+  sceneTitle: v.string(),
+  imagePrompt: v.string(),
+  startFramePrompt: v.string(),
+  endFramePrompt: v.string(),
+  transitionPrompt: v.string(),
+  negativePrompt: v.optional(v.string()),
+  camera: v.optional(v.string()),
+  style: v.optional(v.string()),
+});
+
 function detectInputType(input: string): "url" | "topic" {
   try {
     const candidate = new URL(input);
@@ -274,6 +286,62 @@ function parseStoryPlan(text: string): {
   };
 }
 
+function parsePromptPack(text: string): {
+  sceneNumber: number;
+  sceneTitle: string;
+  imagePrompt: string;
+  startFramePrompt: string;
+  endFramePrompt: string;
+  transitionPrompt: string;
+  negativePrompt?: string;
+  camera?: string;
+  style?: string;
+}[] {
+  const raw = JSON.parse(stripCodeFences(text)) as Record<string, unknown>;
+  const promptsInput = Array.isArray(raw.scenePrompts) ? raw.scenePrompts : [];
+
+  const prompts = promptsInput
+    .map((prompt, index) => {
+      if (!prompt || typeof prompt !== "object") return null;
+      const p = prompt as Record<string, unknown>;
+      const imagePrompt =
+        typeof p.imagePrompt === "string" ? p.imagePrompt.trim() : "";
+      const startFramePrompt =
+        typeof p.startFramePrompt === "string" ? p.startFramePrompt.trim() : "";
+      const endFramePrompt =
+        typeof p.endFramePrompt === "string" ? p.endFramePrompt.trim() : "";
+      const transitionPrompt =
+        typeof p.transitionPrompt === "string" ? p.transitionPrompt.trim() : "";
+
+      if (!imagePrompt || !startFramePrompt || !endFramePrompt || !transitionPrompt) {
+        return null;
+      }
+
+      return {
+        sceneNumber:
+          typeof p.sceneNumber === "number" ? p.sceneNumber : index + 1,
+        sceneTitle:
+          typeof p.sceneTitle === "string" && p.sceneTitle.trim()
+            ? p.sceneTitle
+            : `Scene ${index + 1}`,
+        imagePrompt,
+        startFramePrompt,
+        endFramePrompt,
+        transitionPrompt,
+        negativePrompt:
+          typeof p.negativePrompt === "string" ? p.negativePrompt : undefined,
+        camera: typeof p.camera === "string" ? p.camera : undefined,
+        style: typeof p.style === "string" ? p.style : undefined,
+      };
+    })
+    .filter((prompt): prompt is NonNullable<typeof prompt> => !!prompt);
+
+  if (prompts.length === 0) {
+    throw new Error("MiniMax returned an empty prompt pack");
+  }
+  return prompts;
+}
+
 export const createTask = mutation({
   args: {
     input: v.string(),
@@ -323,6 +391,24 @@ export const listMyTasks = query({
       .withIndex("by_user_created", (q) => q.eq("userId", userId))
       .order("desc")
       .take(limit);
+  },
+});
+
+export const getMyTaskById = query({
+  args: {
+    taskId: v.id("workflowTasks"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== userId) {
+      return null;
+    }
+    return task;
   },
 });
 
@@ -410,6 +496,39 @@ export const setTaskPlanned = internalMutation({
       stage: "planned",
       progress: 100,
       storyPlan: args.storyPlan,
+      scenePrompts: undefined,
+      error: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const setTaskPrompting = internalMutation({
+  args: {
+    taskId: v.id("workflowTasks"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.taskId, {
+      status: "prompting",
+      stage: "prompting",
+      progress: 90,
+      error: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const setTaskPrompted = internalMutation({
+  args: {
+    taskId: v.id("workflowTasks"),
+    scenePrompts: v.array(scenePromptValidator),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.taskId, {
+      status: "prompted",
+      stage: "prompted",
+      progress: 100,
+      scenePrompts: args.scenePrompts,
       error: undefined,
       updatedAt: Date.now(),
     });
@@ -592,6 +711,96 @@ ${context}`,
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Story planning failed";
+      await ctx.runMutation(internal.workflowTasks.setTaskFailed, {
+        taskId: args.taskId,
+        error: message,
+      });
+      throw new Error(message);
+    }
+  },
+});
+
+export const generatePromptPack = action({
+  args: {
+    taskId: v.id("workflowTasks"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const task = await ctx.runQuery(internal.workflowTasks.getTaskInternal, {
+      taskId: args.taskId,
+    });
+    if (!task) {
+      throw new Error("Task not found");
+    }
+    if (task.userId !== userId) {
+      throw new Error("Not authorized to prompt this task");
+    }
+    if (!task.storyPlan || task.storyPlan.scenes.length === 0) {
+      throw new Error("Task has no story plan. Generate story plan first.");
+    }
+
+    await ctx.runMutation(internal.workflowTasks.setTaskPrompting, {
+      taskId: args.taskId,
+    });
+
+    try {
+      const storyPlanJson = JSON.stringify(task.storyPlan);
+      const response = await ctx.runAction(api.minimax.generateChat, {
+        system:
+          "You are an expert cinematic prompt designer. Return only strict JSON.",
+        temperature: 0.4,
+        max_tokens: 2400,
+        messages: [
+          {
+            role: "user",
+            content: `Generate scene-by-scene image and transition prompts from the story plan below.
+Return ONLY valid JSON with this exact top-level shape:
+{
+  "scenePrompts": [
+    {
+      "sceneNumber": 1,
+      "sceneTitle": "...",
+      "imagePrompt": "...",
+      "startFramePrompt": "...",
+      "endFramePrompt": "...",
+      "transitionPrompt": "...",
+      "negativePrompt": "...",
+      "camera": "...",
+      "style": "..."
+    }
+  ]
+}
+
+Requirements:
+- One entry per scene in the story plan.
+- Keep character consistency across scenes.
+- Each prompt should be production-ready for image/video generation.
+- transitionPrompt should describe how to move from this scene to the next scene.
+- Avoid mentioning copyrighted brands or logos.
+
+Story plan:
+${storyPlanJson}`,
+          },
+        ],
+      });
+
+      const scenePrompts = parsePromptPack(response.text);
+      await ctx.runMutation(internal.workflowTasks.setTaskPrompted, {
+        taskId: args.taskId,
+        scenePrompts,
+      });
+
+      return {
+        status: "prompted",
+        promptCount: scenePrompts.length,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Prompt-pack generation failed";
       await ctx.runMutation(internal.workflowTasks.setTaskFailed, {
         taskId: args.taskId,
         error: message,

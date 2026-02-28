@@ -4,6 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -28,10 +29,12 @@ function statusVariant(
     | "ingested"
     | "planning"
     | "planned"
+    | "prompting"
+    | "prompted"
     | "failed",
 ) {
   if (status === "failed") return "destructive";
-  if (status === "planned") return "secondary";
+  if (status === "planned" || status === "prompted") return "secondary";
   return "outline";
 }
 
@@ -39,6 +42,7 @@ export function CreateTaskDialog({
   open,
   onOpenChange,
 }: CreateTaskDialogProps) {
+  const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
   const tasks = useQuery(
     api.workflowTasks.listMyTasks,
@@ -47,10 +51,13 @@ export function CreateTaskDialog({
   const createTask = useMutation(api.workflowTasks.createTask);
   const runTaskIngestion = useAction(api.workflowTasks.runTaskIngestion);
   const generateStoryPlan = useAction(api.workflowTasks.generateStoryPlan);
+  const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
 
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [planningTaskId, setPlanningTaskId] =
+    useState<Id<"workflowTasks"> | null>(null);
+  const [promptingTaskId, setPromptingTaskId] =
     useState<Id<"workflowTasks"> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -115,6 +122,24 @@ export function CreateTaskDialog({
     }
   };
 
+  const onGeneratePromptPack = async (taskId: Id<"workflowTasks">) => {
+    setPromptingTaskId(taskId);
+    setError(null);
+    setMessage(null);
+    try {
+      await generatePromptPack({ taskId });
+      setMessage("Prompt pack generated.");
+    } catch (promptError) {
+      const promptMessage =
+        promptError instanceof Error
+          ? promptError.message
+          : "Prompt-pack generation failed";
+      setError(promptMessage);
+    } finally {
+      setPromptingTaskId(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
@@ -158,7 +183,11 @@ export function CreateTaskDialog({
               tasks.map((task) => (
                 <div
                   key={task._id}
-                  className="rounded-md border px-3 py-2 text-sm space-y-1"
+                  className="rounded-md border px-3 py-2 text-sm space-y-1 cursor-pointer hover:bg-muted/40 transition-colors"
+                  onClick={() => {
+                    onOpenChange(false);
+                    router.push(`/tasks/${task._id}`);
+                  }}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant={statusVariant(task.status)}>
@@ -166,23 +195,49 @@ export function CreateTaskDialog({
                     </Badge>
                     <span className="text-xs text-muted-foreground">
                       {task.sourceDocuments.length} sources
+                      {task.scenePrompts?.length
+                        ? ` • ${task.scenePrompts.length} prompts`
+                        : ""}
                     </span>
                   </div>
                   <p className="truncate text-muted-foreground">{task.input}</p>
-                  {(task.status === "ingested" ||
-                    task.status === "planned") && (
+                  {task.status === "ingested" && (
                     <div className="pt-1">
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={planningTaskId === task._id}
-                        onClick={() => onGenerateStoryPlan(task._id)}
+                        disabled={
+                          planningTaskId === task._id ||
+                          promptingTaskId === task._id
+                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void onGenerateStoryPlan(task._id);
+                        }}
                       >
                         {planningTaskId === task._id
                           ? "Planning..."
-                          : task.status === "planned"
-                            ? "Regenerate Story Plan"
-                            : "Generate Story Plan"}
+                          : "Generate Story Plan"}
+                      </Button>
+                    </div>
+                  )}
+                  {task.status === "planned" && (
+                    <div className="pt-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={
+                          promptingTaskId === task._id ||
+                          planningTaskId === task._id
+                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void onGeneratePromptPack(task._id);
+                        }}
+                      >
+                        {promptingTaskId === task._id
+                          ? "Generating Prompts..."
+                          : "Generate Prompt Pack"}
                       </Button>
                     </div>
                   )}
