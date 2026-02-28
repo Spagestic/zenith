@@ -398,3 +398,101 @@ Reliance Group, the Indian conglomerate, pledged US$110 billion into data centre
     image: "/herosection/robot.png",
   },
 ];
+export const LATEST_ARTICLES = [
+  {
+    id: "6",
+    category: "Technology",
+    title:
+      "Nvidia Reports Record Earnings Quarter as China's H200 Sales Freeze Persists",
+    kidsSummary:
+      "Nvidia, the company that makes the most powerful computer chips for AI, made more money than ever before. But they still can't sell their best chips in China because of rules set by the US government.",
+    content: `![The pipeline for Nvidia's H200 chip remains dry in China. Photo: AFP](https://cdn.i-scmp.com/sites/default/files/styles/1020x680/public/d8/images/canvas/2026/02/26/nvidia-h200.jpg)
+
+Ann Cao in Shanghai
+
+Published: 10:00am, 26 Feb 2026
+
+Nvidia has yet to generate any revenue from its H200 chips in China and does not know if any sales will be allowed in the country, the company said, as the US chip giant reported record quarterly revenue on surging demand for data centre processors.
+
+While the Santa Clara-based tech giant remains the primary beneficiary of the global generative artificial intelligence boom, its ability to navigate the US-China tech war has become a challenge, with the pipeline for the H200 – Nvidia's second-most powerful graphics processing unit to date – still dry in China.
+
+No revenue had been booked from H200 chips and imports by China remained uncertain, despite small amounts being cleared by Washington for China-based customers, said Colette Kress, Nvidia's executive vice-president and chief financial officer, during a post-earnings call on Thursday.`,
+    readTime: "3 min read",
+    timeAgo: "1 hour ago",
+    source: "SCMP",
+    url: "https://www.scmp.com/tech/article/nvidia-record-earnings-china-h200",
+    image: "/latest/nvidia.png",
+  },
+  {
+    id: "7",
+    category: "Hong Kong",
+    title:
+      "Hong Kong's 'King of Shops' Edwin Leong Sells Home on The Peak for US$41.3 Million",
+    kidsSummary:
+      "One of Hong Kong's most famous property investors sold his super expensive home on The Peak. He said it wasn't worth keeping because the rent people pay is too low compared to the price.",
+    content: `![General view of Mount Nicholson on The Peak. Photo: Martin Chan](https://cdn.i-scmp.com/sites/default/files/styles/1020x680/public/d8/images/canvas/2026/02/27/mount-nicholson.jpg)
+
+Peggy Ye
+
+Published: 4:28pm, 27 Feb 2026
+
+Edwin Leong Siu-hung, chairman of Tai Hung Fai Enterprise Group and long dubbed Hong Kong's "king of shops", has sold a flat in the ultra-exclusive Mount Nicholson enclave on The Peak, saying weak rental returns did not make it worthwhile to hold the property any longer.
+
+Land Registry records showed Leong sold the 4,566 sq ft four-bedroom flat for HK$323 million (US$41.3 million), or about HK$70,740 per square foot. He bought the property in 2016 for about HK$312 million.
+
+While the selling price was around 3.5 per cent higher than his buying cost, he may have booked a loss after stamp duty and transaction expenses.`,
+    readTime: "2 min read",
+    timeAgo: "4 hours ago",
+    source: "SCMP",
+    url: "https://www.scmp.com/business/companies/article/edwin-leong-peak-home-sale",
+    image: "/latest/peak.png",
+  },
+  {
+    id: "8",
+    category: "Business",
+    title:
+      "From EVs to Steel, How China's Price-Setting Deals Are Easing Trade Tensions",
+    kidsSummary:
+      "China and South Korea found a clever way to stop a trade fight over steel. Instead of paying big fines, Chinese companies agreed to charge higher prices — the same trick that worked with Europe over electric cars.",
+    content: `![Molten steel sparks fly at a factory in Huaian, Jiangsu province. Photo: AFP](https://cdn.i-scmp.com/sites/default/files/styles/1020x680/public/d8/images/canvas/2026/02/28/china-steel.jpg)
+
+Carol Yang in Beijing
+
+Published: 4:00pm, 28 Feb 2026
+
+China and South Korea have resolved a trade dispute over hot-rolled steel coils through a price-undertaking deal, mirroring the solution used in China's electric vehicle (EV) stand-off with the European Union.
+
+Analysts say the deal, which will see exporters raise export prices to avoid anti-dumping duties, could avert punitive tariffs and safeguard market access for Chinese exports.
+
+The China Iron and Steel Association said in a statement issued on Thursday night that it "welcomed and supported" the use of a price-undertaking agreement to resolve an anti-dumping case initiated by South Korea.`,
+    readTime: "2 min read",
+    timeAgo: "6 hours ago",
+    source: "SCMP",
+    url: "https://www.scmp.com/business/china-business/article/china-price-deals-trade-tensions",
+    image: "/latest/steel.png",
+  },
+  {
+    id: "9",
+    category: "Culture",
+    title:
+      "Ancient Chinese Process of Bringing Cat Home Was Similar to a Marital Contract",
+    kidsSummary:
+      "In ancient China, getting a pet cat was almost as serious as getting married! Owners had to write special letters and give gifts — kind of like a wedding — before they could bring a cat home.",
+    content: `![In ancient China, the process of bringing a cat home to raise as a pet was similar to marriage. Photo: SCMP composite/Shutterstock/Baidu](https://cdn.i-scmp.com/sites/default/files/styles/1020x680/public/d8/images/canvas/2026/02/23/ancient-china-cats.jpg)
+
+Zoey Zhang
+
+Published: 2:00pm, 23 Feb 2026
+
+As feline companions, cats have woven themselves into the fabric of modern Chinese life, appearing in homes, cafes and even fashion shows.
+
+But what you might not know is that their appeal is rooted in ancient times. In fact, bringing a cat into the home and raising it as a pet once followed rituals similar to marriage in ancient China.
+
+Scientists have revealed that the earliest domestic cats appeared around 1,400 years ago during the Tang dynasty (618-907), arriving in China from Central Asia via the Silk Road.`,
+    readTime: "3 min read",
+    timeAgo: "9 hours ago",
+    source: "SCMP",
+    url: "https://www.scmp.com/lifestyle/article/ancient-china-cat-adoption-ritual",
+    image: "/latest/cats.png",
+  },
+];

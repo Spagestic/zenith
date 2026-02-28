@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/landing/HeroSection";
 import Footer from "@/components/landing/Footer";
+import LatestNews from "@/components/landing/LastestNews";
 
 export default function HomePage() {
   return (
@@ -10,6 +11,7 @@ export default function HomePage() {
         <main className="">
           <HeroSection />
           <div className="border-t border-border" />
+          <LatestNews />
         </main>
         <Footer />
       </div>
