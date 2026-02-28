@@ -12,6 +12,7 @@ import type * as CustomPassword from "../CustomPassword.js";
 import type * as articles from "../articles.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as minimax from "../minimax.js";
 import type * as quizzes from "../quizzes.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   articles: typeof articles;
   auth: typeof auth;
   http: typeof http;
+  minimax: typeof minimax;
   quizzes: typeof quizzes;
   seed: typeof seed;
   users: typeof users;
