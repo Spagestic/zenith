@@ -55,6 +55,33 @@ export const listVideoModels = query({
   },
 });
 
+export const listMusicModels = query({
+  args: {},
+  handler: async () => {
+    return {
+      status: "ok",
+      models: ["music-2.5"],
+    };
+  },
+});
+
+export const listSpeechModels = query({
+  args: {},
+  handler: async () => {
+    return {
+      status: "ok",
+      models: [
+        "speech-2.8-hd",
+        "speech-2.8-turbo",
+        "speech-2.6-hd",
+        "speech-2.6-turbo",
+        "speech-02-hd",
+        "speech-02-turbo",
+      ],
+    };
+  },
+});
+
 // ============ Chat completion action ============
 
 const messageValidator = v.object({
@@ -279,10 +306,15 @@ export const queryVideoTask = action({
 
     const data = await response.json();
 
-    if (!response.ok || (data.base_resp && data.base_resp.status_code !== 0)) {
+    if (!response.ok) {
       throw new Error(
         data.base_resp?.status_msg ?? data.error ?? "MiniMax video query error"
       );
+    }
+
+    // When status_code !== 0 (e.g. content moderation), return data so client can show status + message
+    if (data.base_resp && data.base_resp.status_code !== 0) {
+      return data;
     }
 
     // If task succeeded, retrieve file details and inject download URL
@@ -309,5 +341,183 @@ export const queryVideoTask = action({
     }
 
     return data;
+  },
+});
+
+// ============ Lyrics generation action ============
+
+export const generateLyrics = action({
+  args: {
+    prompt: v.string(),
+    mode: v.optional(v.union(v.literal("write_full_song"), v.literal("edit"))),
+    lyrics: v.optional(v.string()),
+    title: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = getApiKey();
+    const mode = args.mode ?? "write_full_song";
+
+    const payload: Record<string, unknown> = {
+      mode,
+      prompt: args.prompt,
+    };
+    if (args.lyrics) payload.lyrics = args.lyrics;
+    if (args.title) payload.title = args.title;
+
+    const response = await fetch(`${MINIMAX_BASE}/v1/lyrics_generation`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || (data.base_resp && data.base_resp.status_code !== 0)) {
+      throw new Error(
+        data.base_resp?.status_msg ?? data.error ?? "MiniMax lyrics API error"
+      );
+    }
+
+    return {
+      song_title: data.song_title,
+      style_tags: data.style_tags,
+      lyrics: data.lyrics,
+    };
+  },
+});
+
+// ============ Music generation action ============
+
+export const generateMusic = action({
+  args: {
+    lyrics: v.string(),
+    prompt: v.optional(v.string()),
+    model: v.optional(v.string()),
+    output_format: v.optional(v.union(v.literal("url"), v.literal("hex"))),
+    audio_setting: v.optional(
+      v.object({
+        sample_rate: v.optional(v.number()),
+        bitrate: v.optional(v.number()),
+        format: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = getApiKey();
+    const model = args.model ?? "music-2.5";
+    const output_format = args.output_format ?? "url";
+
+    const payload: Record<string, unknown> = {
+      model,
+      lyrics: args.lyrics,
+      output_format,
+      audio_setting: args.audio_setting ?? {
+        sample_rate: 44100,
+        bitrate: 256000,
+        format: "mp3",
+      },
+    };
+    if (args.prompt) payload.prompt = args.prompt;
+
+    const response = await fetch(`${MINIMAX_BASE}/v1/music_generation`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || (data.base_resp && data.base_resp.status_code !== 0)) {
+      throw new Error(
+        data.base_resp?.status_msg ?? data.error ?? "MiniMax music API error"
+      );
+    }
+
+    // Response: data.audio (hex or url string), data.status, extra_info
+    const audioUrl =
+      output_format === "url" && typeof data.data?.audio === "string"
+        ? data.data.audio
+        : null;
+
+    return {
+      audio_url: audioUrl,
+      extra_info: data.extra_info,
+      fullResponse: data,
+    };
+  },
+});
+
+// ============ Text-to-Speech action ============
+
+export const generateSpeech = action({
+  args: {
+    text: v.string(),
+    model: v.optional(v.string()),
+    voice_id: v.optional(v.string()),
+    output_format: v.optional(v.union(v.literal("url"), v.literal("hex"))),
+    speed: v.optional(v.number()),
+    language_boost: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = getApiKey();
+    const model = args.model ?? "speech-2.8-turbo";
+    const output_format = args.output_format ?? "url";
+
+    const payload: Record<string, unknown> = {
+      model,
+      text: args.text,
+      stream: false,
+      output_format,
+      voice_setting: {
+        voice_id: args.voice_id ?? "English_expressive_narrator",
+        speed: args.speed ?? 1,
+        vol: 1,
+        pitch: 0,
+      },
+      audio_setting: {
+        sample_rate: 32000,
+        bitrate: 128000,
+        format: "mp3",
+        channel: 1,
+      },
+    };
+    if (args.language_boost) payload.language_boost = args.language_boost;
+
+    const response = await fetch(`${MINIMAX_BASE}/v1/t2a_v2`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || (data.base_resp && data.base_resp.status_code !== 0)) {
+      throw new Error(
+        data.base_resp?.status_msg ?? data.error ?? "MiniMax speech API error"
+      );
+    }
+
+    // When output_format is url, data.data.audio contains the URL string
+    const audioUrl =
+      output_format === "url" &&
+      data.data?.audio &&
+      typeof data.data.audio === "string"
+        ? data.data.audio
+        : null;
+
+    return {
+      audio_url: audioUrl,
+      extra_info: data.extra_info,
+      fullResponse: data,
+    };
   },
 });
