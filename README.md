@@ -1,212 +1,104 @@
-# 🌍 Zenith
+# Zenith
 
-**Learn the news, don't just read it.**
+Turn real-world news into kid-friendly cartoon stories in minutes.
 
-Zenith is an AI-powered news & knowledge platform that transforms daily news into structured, personalized learning — with interactive knowledge graphs, AI-generated video & audio briefings, adaptive difficulty, and comprehension tracking.
+Zenith is a hackathon project that converts a topic or news URL into a short multi-scene cartoon video pipeline:
 
-**Safe by default.** Unauthenticated users see a kids-safe, zero-tracking experience. Adults opt in to full coverage by verifying their age at login.
+1. ingest sources with Exa,
+2. generate kid-friendly scenes/script/characters with MiniMax,
+3. generate scene image prompts,
+4. render start/end frames,
+5. chain videos per scene,
+6. play the full story.
 
-> 🏆 Built at [HackTheEast 2026](https://hacktheeast.com)
+Built for HackTheEast 2026.
 
----
+## What works now
 
-## ✨ Features
+- Authenticated users can create workflow tasks from the header dialog.
+- URL/topic ingestion with Exa (`getContents` + `searchAndContents`) and paywall fallback search.
+- Structured task pipeline persisted in Convex with stage/status tracking.
+- Story planning with MiniMax text generation.
+- Prompt-pack generation with JSON repair fallback.
+- Scene image generation from start/end frame prompts.
+- Scene video generation with first/last-frame chaining and polling.
+- Task detail page with:
+  - source, story plan, prompt pack, image/video asset sections
+  - stage-aware next action button
+  - "Play Full Story" sequential playback experience
 
-### 🛡️ Privacy-First, Safe by Default
+## Current workflow stages
 
-- **No login required** — browse kids-safe news with zero data collection
-- **Age-gated content** — only verified 18+ users unlock full/sensitive coverage
-- **No ads, no tracking, no algorithmic manipulation**
-- Transparent content filtering — open source, inspectable by parents & educators
+- `queued`
+- `ingesting`
+- `ingested`
+- `planning`
+- `planned`
+- `prompting`
+- `prompted`
+- `rendering`
+- `rendered`
+- `failed`
 
-### 📰 AI-Curated News Feed
+## Tech stack
 
-- Aggregates HK local & global news from multiple sources (RSS, NewsAPI)
-- Every article exists in **two versions**: kids-safe and full adult
-- Cron-powered ingestion pipeline processes articles with AI summarization, categorization, and safety rating
+- Next.js (App Router) + TypeScript
+- Convex + Convex Auth
+- MiniMax (chat, image, video, music, speech APIs)
+- Exa (search/scrape/news retrieval)
+- Tailwind + shadcn/ui
+- Bun
 
-### 🎬 Multimodal Consumption (Powered by MiniMax)
+## Key files
 
-- **Read** — AI-curated summaries at your level
-- **Watch** — Auto-generated video news briefings
-- **Listen** — Text-to-speech audio briefings on the go
-- **🎵 Background music** — AI-generated tracks for briefings
+- `convex/schema.ts` - workflow task schema and status model
+- `convex/workflowTasks.ts` - workflow API re-export barrel
+- `convex/workflowTasks.actions.ts` - orchestration actions
+- `convex/workflowTasks.mutations.ts` - task state persistence mutations
+- `convex/workflowTasks.queries.ts` - task queries
+- `convex/workflow/helpers.ts` - normalization/parsing helpers
+- `convex/workflow/validators.ts` - Convex validators
+- `components/workflow/CreateTaskDialog.tsx` - quick task launcher
+- `app/(protected)/tasks/[taskId]/page.tsx` - task details + full story playback
 
-### 🧠 Knowledge Graphs & Timelines
-
-- Obsidian-style interactive knowledge graph showing how topics connect
-- Click any node to explore related articles and sub-topics
-- Timeline view showing how a story evolved over time
-
-### 📝 EdTech & Adaptive Learning
-
-- **Adaptive difficulty** — Same article at Simple / Standard / Expert levels
-- **Comprehension quizzes** — Auto-generated MCQs after reading
-- **Learning dashboard** — Topics mastered, streak tracking, knowledge areas
-- **"Did You Know?"** fun facts on every kids article
-- **"Why Should HK Care?"** localization on every global story
-
-### 🇭🇰 Hong Kong Focus
-
-- Dedicated HK Local category
-- Every global story gets a "Why HK Should Care" paragraph
-- Sources include RTHK, SCMP, and international outlets
-
----
-
-## 🏗️ Tech Stack
-
-| Layer               | Technology                                                                     |
-| ------------------- | ------------------------------------------------------------------------------ |
-| **Framework**       | [Next.js 14](https://nextjs.org/) (App Router)                                 |
-| **Language**        | TypeScript                                                                     |
-| **Styling**         | [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) |
-| **Backend / DB**    | [Convex](https://convex.dev/)                                                  |
-| **Auth**            | [Convex Auth](https://labs.convex.dev/auth)                                    |
-| **AI / LLM**        | [MiniMax API](https://platform.minimax.io/) (LLM, TTS, Video, Music)           |
-| **News Sources**    | NewsAPI, RSS feeds (Reuters, BBC, RTHK, SCMP)                                  |
-| **Package Manager** | [Bun](https://bun.sh/)                                                         |
-| **Deployment**      | [Vercel](https://vercel.com/)                                                  |
-
----
-
-## 📁 Project Structure
-
-```
-
-zenith/
-├── app/
-│ ├── page.tsx # Root page (kids-safe default)
-│ ├── article/[id]/page.tsx # Article detail page
-│ ├── graph/page.tsx # Full knowledge graph explorer
-│ ├── topic/[id]/page.tsx # Topic detail + timeline
-│ └── dashboard/page.tsx # Learning progress (auth required)
-├── components/
-│ ├── landing/
-│ │ ├── SafeModeBanner.tsx # Kids safe mode notification
-│ │ ├── HeroBriefing.tsx # Daily video/audio briefing hero
-│ │ ├── CategoryFilters.tsx # Category filter chips
-│ │ ├── NewsCard.tsx # Individual article card
-│ │ ├── NewsFeed.tsx # Article grid with load more
-│ │ ├── KnowledgeGraphTeaser.tsx# Mini graph preview
-│ │ ├── HowItWorks.tsx # Feature showcase grid
-│ │ ├── TransparencyPanel.tsx # Parents & educators section
-│ │ └── Footer.tsx # Site footer
-│ └── ui/ # shadcn/ui components
-├── convex/
-│ ├── schema.ts # Database schema
-│ ├── articles.ts # Article queries & mutations
-│ ├── topics.ts # Topic/graph queries
-│ ├── users.ts # User management
-│ ├── quizzes.ts # Quiz generation & scoring
-│ └── crons.ts # Scheduled news ingestion
-└── lib/
-└── minimax.ts # MiniMax API integration
-
-```
-
----
-
-## 🚀 Getting Started
+## Getting started
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) (v1.0+)
-- [Convex account](https://convex.dev/)
-- [MiniMax API key](https://platform.minimax.io/)
+- Bun
+- Convex account/deployment
+- Exa API key
+- MiniMax API key
 
 ### Setup
 
 ```bash
-# Clone the repo
-git clone https://github.com/your-team/zenith.git
-cd zenith
-
-# Install dependencies
 bun install
-
-# Set up Convex
 bunx convex dev
-
-# Start the dev server
 bun run dev
 ```
 
-### Environment Variables
+### Environment variables
 
-Create a `.env.local` file:
+Create `.env.local`:
 
 ```env
-# Convex
 CONVEX_DEPLOYMENT=your-deployment
 NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
 
-# MiniMax
+EXA_API_KEY=your-exa-api-key
+
 MINIMAX_API_KEY=your-minimax-api-key
 MINIMAX_GROUP_ID=your-group-id
-
-# News
-NEWS_API_KEY=your-newsapi-key
 ```
 
----
+## In progress / next
 
-## 🧩 How It Works
+- Background music generation + timeline mixing
+- Character dialogue TTS generation
+- Final composed export (single merged output file)
+- Optional style presets per task
 
-```
-┌─────────────┐     ┌──────────────┐     ┌──────────────┐
-│  News Sources│────▶│  Convex Cron │────▶│  MiniMax LLM │
-│  (RSS, API)  │     │  (every 30m) │     │  (summarize) │
-└─────────────┘     └──────────────┘     └──────┬───────┘
-                                                 │
-                                                 ▼
-                                        ┌────────────────┐
-                                        │   Convex DB    │
-                                        │                │
-                                        │  · kids_summary│
-                                        │  · full_summary│
-                                        │  · safety_rating│
-                                        │  · entities    │
-                                        │  · embeddings  │
-                                        └───────┬────────┘
-                                                │
-                    ┌───────────────────────────┼───────────────────────┐
-                    │                           │                       │
-                    ▼                           ▼                       ▼
-            ┌──────────────┐          ┌──────────────┐        ┌──────────────┐
-            │  Kids Feed   │          │  Adult Feed  │        │  Knowledge   │
-            │  (default)   │          │  (18+ login) │        │  Graph       │
-            │              │          │              │        │              │
-            │  · Safe only │          │  · All news  │        │  · Topics    │
-            │  · No tracking│         │  · Bias lens │        │  · Timelines │
-            │  · Fun facts │          │  · Analytics │        │  · Quizzes   │
-            └──────────────┘          └──────────────┘        └──────────────┘
-```
-
----
-
-## 🏆 Hackathon Track Alignment
-
-| Track                               | How Zenith Qualifies                                                     |
-| ----------------------------------- | ------------------------------------------------------------------------ |
-| **Main Award**                      | Novel AI platform with strong demo, real-world impact                    |
-| **ExpressVPN Digital Guardian**     | Privacy-first, kids-safe by default, zero tracking, open source          |
-| **OAX Foundation AI EdTech**        | Intelligent curation, adaptive learning paths, content overload solution |
-| **MiniMax Creative Usage**          | Multi-tool usage: LLM + TTS + Video + Music generation                   |
-| **RevisionDojo Future of Learning** | Adaptive difficulty, quizzes, knowledge tracking, learning dashboards    |
-
----
-
-## 👥 Team
-
-Built with ❤️ at HackTheEast 2026.
-
----
-
-## 📄 License
+## License
 
 MIT
-
-```
-
-```

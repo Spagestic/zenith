@@ -68,6 +68,7 @@ export default defineSchema({
   // ============ WORKFLOW TASKS ============
   workflowTasks: defineTable({
     userId: v.id("users"),
+    storyTitle: v.optional(v.string()),
     input: v.string(),
     inputType: v.union(v.literal("url"), v.literal("topic")),
     status: v.union(
@@ -193,4 +194,12 @@ export default defineSchema({
   })
     .index("by_user_created", ["userId", "createdAt"])
     .index("by_status_updated", ["status", "updatedAt"]),
+
+  // ============ SUBSCRIPTIONS (creator / channel subscribers) ============
+  subscriptions: defineTable({
+    creatorId: v.id("users"),
+    subscriberId: v.id("users"),
+  })
+    .index("by_creator", ["creatorId"])
+    .index("by_creator_and_subscriber", ["creatorId", "subscriberId"]),
 });

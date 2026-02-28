@@ -201,9 +201,14 @@ ${context}`,
       });
 
       const storyPlan = parseStoryPlan(response.text);
+      const firstSceneTitle = storyPlan.scenes[0]?.title?.trim();
+      const derivedTitle = firstSceneTitle
+        ? `${firstSceneTitle} - Kids News Cartoon`
+        : undefined;
       await ctx.runMutation(internal.workflowTasks.setTaskPlanned, {
         taskId: args.taskId,
         storyPlan,
+        storyTitle: derivedTitle,
       });
 
       return {

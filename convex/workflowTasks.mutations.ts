@@ -28,6 +28,7 @@ export const createTask = mutation({
     const now = Date.now();
     const taskId = await ctx.db.insert("workflowTasks", {
       userId,
+      storyTitle: undefined,
       input,
       inputType: detectInputType(input),
       status: "queued",
@@ -40,6 +41,36 @@ export const createTask = mutation({
     });
 
     return { taskId };
+  },
+});
+
+export const updateStoryTitle = mutation({
+  args: {
+    taskId: v.id("workflowTasks"),
+    storyTitle: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const task = await ctx.db.get(args.taskId);
+    if (!task || task.userId !== userId) {
+      throw new Error("Not authorized to edit this task");
+    }
+
+    const nextTitle = args.storyTitle.trim();
+    if (!nextTitle) {
+      throw new Error("Title cannot be empty");
+    }
+
+    await ctx.db.patch(args.taskId, {
+      storyTitle: nextTitle,
+      updatedAt: Date.now(),
+    });
+
+    return { ok: true };
   },
 });
 
@@ -111,12 +142,14 @@ export const setTaskPlanned = internalMutation({
   args: {
     taskId: v.id("workflowTasks"),
     storyPlan: storyPlanValidator,
+    storyTitle: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.taskId, {
       status: "planned",
       stage: "planned",
       progress: 100,
+      storyTitle: args.storyTitle,
       storyPlan: args.storyPlan,
       scenePrompts: undefined,
       error: undefined,

@@ -2,13 +2,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import Header from "@/components/Header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 
 function statusVariant(
@@ -50,10 +51,30 @@ export default function TaskDetailsPage() {
   const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
   const generateSceneImages = useAction(api.workflowTasks.generateSceneImages);
   const generateSceneVideos = useAction(api.workflowTasks.generateSceneVideos);
+  const updateStoryTitle = useMutation(api.workflowTasks.updateStoryTitle);
 
   const [isRunning, setIsRunning] = useState(false);
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [storyVideoIndex, setStoryVideoIndex] = useState(0);
+
+  const sortedVideos = useMemo(
+    () =>
+      (task?.assets?.videos ?? [])
+        .slice()
+        .sort((a, b) => a.sceneNumber - b.sceneNumber),
+    [task?.assets?.videos],
+  );
+  const activeVideoIndex =
+    sortedVideos.length > 0
+      ? Math.max(0, Math.min(storyVideoIndex, sortedVideos.length - 1))
+      : 0;
+  const activeStoryVideo = sortedVideos[activeVideoIndex];
+
+  const baseTitle = task?.storyTitle?.trim() || "Kids News Story";
+  const titleInputValue = titleDraft || baseTitle;
 
   const runNextStage = async () => {
     if (!task) return;
@@ -97,11 +118,32 @@ export default function TaskDetailsPage() {
     return null;
   })();
 
+  const onSaveTitle = async () => {
+    if (!task) return;
+    const nextTitle = titleInputValue.trim();
+    if (!nextTitle) {
+      setError("Title cannot be empty.");
+      return;
+    }
+    setIsSavingTitle(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await updateStoryTitle({ taskId: task._id, storyTitle: nextTitle });
+      setTitleDraft(nextTitle);
+      setMessage("Title updated.");
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Could not save title");
+    } finally {
+      setIsSavingTitle(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="mx-auto w-full max-w-4xl px-4 py-6 space-y-4">
-        <h1 className="text-2xl font-semibold">Task Details</h1>
+        <h1 className="text-2xl font-semibold">{baseTitle}</h1>
 
         {!taskId && (
           <p className="text-sm text-destructive">Invalid task id in URL.</p>
@@ -147,6 +189,23 @@ export default function TaskDetailsPage() {
                   {task.input}
                 </span>
               </p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Story title</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={titleInputValue}
+                    onChange={(event) => setTitleDraft(event.target.value)}
+                    placeholder="Enter a title for this story"
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={isSavingTitle || !titleInputValue.trim()}
+                    onClick={() => void onSaveTitle()}
+                  >
+                    {isSavingTitle ? "Saving..." : "Save Title"}
+                  </Button>
+                </div>
+              </div>
               {task.error && (
                 <p className="text-sm text-destructive">Error: {task.error}</p>
               )}
@@ -304,6 +363,60 @@ export default function TaskDetailsPage() {
               <h2 className="text-lg font-medium">Video Assets</h2>
               {task.assets?.videos?.length ? (
                 <>
+                  <div className="rounded-md border p-3 space-y-3 bg-muted/30">
+                    {activeStoryVideo && (
+                      <>
+                        <video
+                          key={`${activeStoryVideo.taskId}-${activeVideoIndex}`}
+                          controls
+                          autoPlay
+                          className="w-full max-w-2xl rounded-md border bg-black"
+                          src={activeStoryVideo.videoUrl}
+                          onEnded={() => {
+                            if (activeVideoIndex < sortedVideos.length - 1) {
+                              setStoryVideoIndex(activeVideoIndex + 1);
+                            }
+                          }}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          Now playing: Scene {activeStoryVideo.sceneNumber} —{" "}
+                          {activeStoryVideo.sceneTitle}
+                        </p>
+                      </>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={activeVideoIndex === 0}
+                        onClick={() =>
+                          setStoryVideoIndex((idx) => Math.max(0, idx - 1))
+                        }
+                      >
+                        Previous Scene
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={activeVideoIndex >= sortedVideos.length - 1}
+                        onClick={() =>
+                          setStoryVideoIndex((idx) =>
+                            Math.min(sortedVideos.length - 1, idx + 1),
+                          )
+                        }
+                      >
+                        Next Scene
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setStoryVideoIndex(0)}
+                      >
+                        Restart Story
+                      </Button>
+                    </div>
+                  </div>
+
                   <p className="text-sm text-muted-foreground">
                     {task.assets.videos.length} scene videos generated
                   </p>
