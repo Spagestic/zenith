@@ -55,6 +55,7 @@ export default function WatchPage() {
   );
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isWaitingForAudioEnd, setIsWaitingForAudioEnd] = useState(false);
   const [copied, setCopied] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -68,6 +69,21 @@ export default function WatchPage() {
           (clip) => clip.sceneNumber === currentVideo.sceneNumber,
         )
       : null;
+
+  const advanceToNextScene = () => {
+    if (!story) return;
+    setActiveIndex((idx) => Math.min(story.videos.length - 1, idx + 1));
+  };
+
+  const hasRemainingNarration = () => {
+    const audio = ttsAudioRef.current;
+    if (!audio) return false;
+    if (audio.ended) return false;
+    if (Number.isFinite(audio.duration)) {
+      return audio.duration - audio.currentTime > 0.2;
+    }
+    return !audio.paused;
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -197,13 +213,23 @@ export default function WatchPage() {
                     }}
                     onPause={() => {
                       setIsPlaying(false);
-                      ttsAudioRef.current?.pause();
+                      const video = videoRef.current;
+                      const nearVideoEnd =
+                        !!video &&
+                        Number.isFinite(video.duration) &&
+                        video.duration - video.currentTime <= 0.25;
+                      if (!video?.ended && !nearVideoEnd) {
+                        ttsAudioRef.current?.pause();
+                      }
                     }}
                     onEnded={() => {
                       setIsPlaying(false);
-                      ttsAudioRef.current?.pause();
+                      if (hasRemainingNarration()) {
+                        setIsWaitingForAudioEnd(true);
+                        return;
+                      }
                       if (activeIndex < story.videos.length - 1) {
-                        setActiveIndex(activeIndex + 1);
+                        advanceToNextScene();
                       }
                     }}
                   />
@@ -213,6 +239,13 @@ export default function WatchPage() {
                       ref={ttsAudioRef}
                       src={currentTTS.audioUrl}
                       preload="auto"
+                      onEnded={() => {
+                        setIsWaitingForAudioEnd(false);
+                        const video = videoRef.current;
+                        if (video?.ended && story && activeIndex < story.videos.length - 1) {
+                          advanceToNextScene();
+                        }
+                      }}
                     />
                   )}
                 </div>
@@ -230,13 +263,19 @@ export default function WatchPage() {
                   variant="outline"
                   disabled={!story || activeIndex >= story.videos.length - 1}
                   onClick={() =>
-                    setActiveIndex((idx) =>
-                      story ? Math.min(story.videos.length - 1, idx + 1) : idx,
-                    )
+                    {
+                      setIsWaitingForAudioEnd(false);
+                      advanceToNextScene();
+                    }
                   }
                 >
                   Next Scene
                 </Button>
+                {isWaitingForAudioEnd && (
+                  <span className="self-center text-xs text-muted-foreground">
+                    Waiting for narration to finish...
+                  </span>
+                )}
                 {!currentTTS?.audioUrl && (
                   <span className="self-center text-xs text-muted-foreground">
                     This scene has no TTS track yet (video-only playback).
@@ -330,7 +369,10 @@ export default function WatchPage() {
                       className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/60 ${
                         idx === activeIndex ? "bg-muted" : ""
                       }`}
-                      onClick={() => setActiveIndex(idx)}
+                      onClick={() => {
+                        setIsWaitingForAudioEnd(false);
+                        setActiveIndex(idx);
+                      }}
                     >
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
                         {video.sceneNumber}
