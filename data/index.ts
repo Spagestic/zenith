@@ -1,4 +1,4 @@
-// lib/seedData.ts
+// /data/index.ts
 
 export const SEED_ARTICLES = [
   {
@@ -31,7 +31,7 @@ A highlight of the visit was Merz’s tour of Unitree, a leader in humanoid robo
 For the first time, Hong Kong had both male and female skaters at the same Winter Games, marking a milestone for a city better known for subtropical heat than frozen rinks.
 
 Despite the progress, Hong Kong’s skaters train in a landscape defined by scarcity. With no Olympic-size rink and limited access to ice, athletes say local conditions make global competitiveness an uphill battle. “We always struggle to adapt when competing overseas because the rinks are much larger than what we train on,” said figure skater Jarvis Ho.`,
-    imageUrl: "/herosection/sports.png",
+    imageUrl: "/data/hong-kongs-skaters-bright-future-milano-cortina.png",
     category: "sports" as const, // Changed to "sports" to fit schema
     sourceUrl:
       "https://www.scmp.com/sport/hong-kong/article/3344953/hong-kongs-skaters-see-bright-future-after-milano-cortina",
@@ -50,7 +50,7 @@ Despite the progress, Hong Kong’s skaters train in a landscape defined by scar
 Sino Land reported a net profit of HK$2.22 billion (US$284 million) in the first half of its current financial year. The company’s revenue rose 34.5 per cent to HK$5.19 billion from HK$3.85 billion a year ago. Revenue from property sales jumped 2.8 times to HK$6.91 billion.
 
 “I am encouraged by the clear improvement in both the economic and operating environment,” chairman Daryl Ng Win Kong said, citing the interest-rate-cut cycle, Hong Kong’s talent admission scheme and mainland China’s national economic blueprint for bolstering the property sector.`,
-    imageUrl: "/herosection/business.png",
+    imageUrl: "/data/hong-kong-developer-sino-land-steady-profit.png",
     category: "hong_kong" as const, // Mapped "Business" to "hong_kong"
     sourceUrl:
       "https://www.scmp.com/business/companies/article/3344915/hong-kong-developer-sino-land-posts-steady-profit",
@@ -69,7 +69,7 @@ Sino Land reported a net profit of HK$2.22 billion (US$284 million) in the first
 The changes announced on Friday mean that Nasa is essentially swapping the actual moon landing for an additional test mission staged closer to Earth – while insisting the 2028 deadline for a lunar touchdown remains unchanged.
 
 Nasa said the goal of the changed sequence is to fly more frequently to counteract one of the biggest criticisms of Artemis: the slow development pace of its SLS rocket. The agency has tasked Elon Musk’s SpaceX and Jeff Bezos’ Blue Origin to build landers to ferry humans to and from the moon.`,
-    imageUrl: "/herosection/nasa.png",
+    imageUrl: "/data/nasa-overhauls-artemis-mission-moon-race.png",
     category: "science" as const,
     sourceUrl:
       "https://www.scmp.com/news/world/united-states-canada/article/3344936/nasa-overhauls-artemis-mission-amid-setbacks-moon-race-china",
@@ -88,7 +88,7 @@ Nasa said the goal of the changed sequence is to fly more frequently to countera
 That sales pitch certainly appears to be drawing attention. The five-day AI summit, which ran to February 20, produced a wave of investment pledges. India’s minister for electronics and IT, Ashwini Vaishnaw, announced more than US$200 billion in AI and deep-tech commitments over the next two years.
 
 Reliance Group pledged US$110 billion into data centres and related infrastructure, while domestic rival Adani Group said it would invest US$100 billion in renewable energy-powered AI data centres by 2035. Microsoft said it planned to invest US$50 billion by the end of the decade.`,
-    imageUrl: "/herosection/robot.png",
+    imageUrl: "/data/indias-ai-superpower-dream-lands-200-billion.png",
     category: "tech" as const,
     sourceUrl:
       "https://www.scmp.com/week-asia/economics/article/3344919/indias-ai-superpower-dream-lands-us200-billion",
