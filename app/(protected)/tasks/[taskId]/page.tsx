@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import Header from "@/components/Header";
@@ -11,6 +12,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { CompanyLogo } from "@/components/CompanyLogo";
+
+function getDomain(url: string) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
 
 function statusVariant(
   status:
@@ -146,8 +156,11 @@ export default function TaskDetailsPage() {
             <section className="rounded-lg border p-4 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <Badge variant={statusVariant(task.status)}>
+                  <Badge variant={statusVariant(task.status)} className="flex items-center gap-1.5">
                     {task.status}
+                    {["queued", "ingesting", "planning", "prompting", "rendering"].includes(task.status) && (
+                      <Spinner className="h-3 w-3" />
+                    )}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
                     Progress: {task.progress ?? 0}%
@@ -191,25 +204,43 @@ export default function TaskDetailsPage() {
               <p className="text-sm text-muted-foreground">
                 {task.sourceDocuments.length} source documents
               </p>
+              {task.status === "ingesting" && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <Spinner />
+                  Ingesting sources...
+                </div>
+              )}
               <div className="space-y-2 max-h-72 overflow-y-auto">
                 {task.sourceDocuments.map((doc, idx) => (
-                  <div
+                  <Link
                     key={`${doc.url}-${idx}`}
-                    className="rounded-md border p-2"
+                    href={doc.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-start gap-3 rounded-md border p-3 bg-muted/20 hover:bg-muted/40 transition-colors group"
                   >
-                    <p className="text-sm font-medium">
-                      {doc.title ?? "Untitled"}
-                    </p>
-                    <p className="text-xs text-muted-foreground break-all">
-                      {doc.url}
-                    </p>
-                  </div>
+                    <CompanyLogo 
+                      domain={getDomain(doc.url)} 
+                      className="h-10 w-10 rounded-md object-contain bg-background border p-1 shrink-0" 
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium line-clamp-1 group-hover:underline">
+                        {doc.title ?? "Untitled"}
+                      </p>
+                      <p className="text-xs text-muted-foreground break-all line-clamp-1">
+                        {doc.url}
+                      </p>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </section>
 
             <section className="rounded-lg border p-4 space-y-2">
-              <h2 className="text-lg font-medium">Story Plan</h2>
+              <h2 className="text-lg font-medium flex items-center gap-2">
+                Story Plan
+                {task.status === "planning" && <Spinner className="h-4 w-4" />}
+              </h2>
               {task.storyPlan ? (
                 <>
                   <p className="text-sm text-muted-foreground">
@@ -240,7 +271,10 @@ export default function TaskDetailsPage() {
             </section>
 
             <section className="rounded-lg border p-4 space-y-2">
-              <h2 className="text-lg font-medium">Prompt Pack</h2>
+              <h2 className="text-lg font-medium flex items-center gap-2">
+                Prompt Pack
+                {task.status === "prompting" && <Spinner className="h-4 w-4" />}
+              </h2>
               {task.scenePrompts?.length ? (
                 <>
                   <p className="text-sm text-muted-foreground">
@@ -270,7 +304,10 @@ export default function TaskDetailsPage() {
             </section>
 
             <section className="rounded-lg border p-4 space-y-2">
-              <h2 className="text-lg font-medium">Image Assets</h2>
+              <h2 className="text-lg font-medium flex items-center gap-2">
+                Image Assets
+                {task.status === "rendering" && !task.assets?.images?.length && <Spinner className="h-4 w-4" />}
+              </h2>
               {task.assets?.images?.length ? (
                 <>
                   <p className="text-sm text-muted-foreground">
@@ -331,7 +368,10 @@ export default function TaskDetailsPage() {
             </section>
 
             <section className="rounded-lg border p-4 space-y-2">
-              <h2 className="text-lg font-medium">Video Assets</h2>
+              <h2 className="text-lg font-medium flex items-center gap-2">
+                Video Assets
+                {task.status === "rendering" && !task.assets?.videos?.length && <Spinner className="h-4 w-4" />}
+              </h2>
               {task.assets?.videos?.length ? (
                 <>
                   <div className="rounded-md border p-3 space-y-3 bg-muted/30">
@@ -425,7 +465,10 @@ export default function TaskDetailsPage() {
             </section>
 
             <section className="rounded-lg border p-4 space-y-2">
-              <h2 className="text-lg font-medium">TTS Assets</h2>
+              <h2 className="text-lg font-medium flex items-center gap-2">
+                TTS Assets
+                {task.status === "rendering" && !task.assets?.tts?.length && <Spinner className="h-4 w-4" />}
+              </h2>
               {task.assets?.tts?.length ? (
                 <>
                   <p className="text-sm text-muted-foreground">
