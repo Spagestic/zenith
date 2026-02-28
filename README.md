@@ -2,6 +2,8 @@
 
 **Turn real-world news into kid-friendly cartoon stories in minutes.**
 
+[![Zenith](./public/image.png)](https://zenithhk.vercel.app/)
+
 Zenith is a hackathon project built for **HackTheEast 2026** that converts a complex topic or news URL into a short, multi-scene cartoon video. By transforming adult news and complex topics into engaging, age-appropriate animated content, Zenith provides a safe and educational digital environment for children.
 
 ## 🏆 Hackathon Tracks
