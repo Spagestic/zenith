@@ -139,18 +139,6 @@ export interface ExaScrapeResponse {
   results: ExaScrapedContent[];
 }
 
-export interface ExaScrapedContent {
-  url: string;
-  id: string;
-  title?: string;
-  author?: string;
-  publishedDate?: string;
-  text?: string;
-  highlights?: string[];
-  highlightScores?: number[];
-  summary?: string;
-}
-
 export interface ExaBatchScrapeResponse {
   success: boolean;
   totalUrls: number;
@@ -162,4 +150,109 @@ export interface ExaBatchScrapeResponse {
     urls: string[];
     error: string;
   }>;
+}
+
+export type ContentVerbosity = "compact" | "standard" | "full";
+
+export interface TextOptions {
+  maxCharacters?: number;
+  includeHtmlTags?: boolean;
+  verbosity?: ContentVerbosity;
+}
+
+export interface HighlightsOptions {
+  query?: string;
+  maxCharacters?: number;
+  highlightsPerUrl?: number;
+}
+
+export interface SummaryOptions {
+  query?: string;
+  schema?: {
+    type: "object";
+    properties: Record<
+      string,
+      {
+        type: "string" | "number" | "boolean" | "array";
+        description?: string;
+      }
+    >;
+    required?: string[];
+  };
+}
+
+export interface ExaScrapeRequest {
+  url?: string; // Single URL
+  urls?: string[]; // Multiple URLs
+  ids?: string[]; // Alternative to urls (matches API nomenclature)
+  text?: boolean | TextOptions;
+  highlights?: boolean | HighlightsOptions;
+  summary?: boolean | SummaryOptions;
+  maxAgeHours?: number; // 0 = always livecrawl, -1 = never livecrawl
+  livecrawl?: boolean;
+  livecrawlTimeout?: number; // Milliseconds, recommended: 10000-15000
+  subpages?: number; // Max subpages to crawl (1-50)
+  subpageTarget?: string[]; // Keywords to prioritize when selecting subpages
+}
+
+export interface ExaSubpageScrapeRequest {
+  url: string;
+  subpages?: number;
+  subpageTarget?: string[];
+  text?: boolean | TextOptions;
+  highlights?: boolean | HighlightsOptions;
+  summary?: boolean | SummaryOptions;
+  maxAgeHours?: number;
+  livecrawlTimeout?: number;
+}
+
+export type ExaContentStatus = "success" | "error";
+
+export type ExaErrorTag =
+  | "CRAWL_NOT_FOUND" // 404
+  | "CRAWL_TIMEOUT" // 408
+  | "CRAWL_LIVECRAWL_TIMEOUT" // livecrawlTimeout exceeded
+  | "SOURCE_NOT_AVAILABLE" // 403
+  | "CRAWL_UNKNOWN_ERROR"; // 500+
+
+export interface ExaContentError {
+  tag: ExaErrorTag;
+  httpStatusCode?: number;
+  message?: string;
+}
+
+export interface ExaContentStatusInfo {
+  id: string;
+  status: ExaContentStatus;
+  error?: ExaContentError;
+}
+
+export interface ExaScrapeResponse {
+  results: ExaScrapedContent[];
+  statuses?: ExaContentStatusInfo[];
+  summary?: {
+    total: number;
+    successful: number;
+    failed: number;
+  };
+  crawlSummary?: {
+    baseUrl: string;
+    requestedSubpages: number;
+    targetKeywords: string[];
+    totalPagesReturned: number;
+    successful: number;
+    failed: number;
+  };
+}
+
+export interface ExaScrapedContent {
+  url: string;
+  id: string;
+  title?: string;
+  author?: string;
+  publishedDate?: string;
+  text?: string;
+  highlights?: string[];
+  highlightScores?: number[];
+  summary?: string | Record<string, any>; // Can be structured if schema provided
 }

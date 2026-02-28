@@ -3,12 +3,8 @@ import type {
   ExaFindSimilarRequest,
   ExaGetContentsRequest,
   ExaSearchResponse,
-} from "@/types/exa";
-import type {
   ExaScrapeRequest,
-  ExaBatchScrapeRequest,
   ExaScrapeResponse,
-  ExaBatchScrapeResponse,
 } from "@/types/exa";
 
 export class ExaClient {
@@ -108,9 +104,7 @@ export class ExaClient {
     return this.scrape({ urls, ...options });
   }
 
-  async batchScrape(
-    params: ExaBatchScrapeRequest,
-  ): Promise<ExaBatchScrapeResponse> {
+  async batchScrape(params: ExaScrapeRequest): Promise<ExaScrapeRequest> {
     const response = await fetch(`${this.baseUrl}/scrape/batch`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -175,7 +169,7 @@ export const exaScrapeUrls = (
   urls: string[],
   options?: Omit<ExaScrapeRequest, "urls">,
 ) => exaClient.scrapeUrls(urls, options);
-export const exaBatchScrape = (params: ExaBatchScrapeRequest) =>
+export const exaBatchScrape = (params: ExaScrapeRequest) =>
   exaClient.batchScrape(params);
 export const exaScrapeSimple = (
   url: string,

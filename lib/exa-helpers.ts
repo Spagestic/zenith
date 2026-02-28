@@ -1,7 +1,10 @@
-import type { ExaSearchRequest, ContentsOptions } from "@/types/exa";
-
-import type { ExaScrapeRequest } from "@/types/exa";
-
+import type {
+  ExaSearchRequest,
+  ContentsOptions,
+  ExaScrapeRequest,
+  ExaSubpageScrapeRequest,
+  SummaryOptions,
+} from "@/types/exa";
 /**
  * Get highlights-optimized search config for agentic workflows
  * Provides token-efficient excerpts perfect for multi-step agents
@@ -187,8 +190,7 @@ export function getCombinedContentsConfig(
 }
 
 /**
- * Get basic scrape config with highlights
- * Good for quick content extraction
+ * Get basic scrape config with highlights (token-efficient)
  */
 export function getBasicScrapeConfig(
   url: string,
@@ -203,85 +205,135 @@ export function getBasicScrapeConfig(
 }
 
 /**
- * Get full text scrape config
- * For comprehensive content extraction
+ * Get full text scrape config for deep analysis
  */
 export function getFullTextScrapeConfig(
   url: string,
-  maxCharacters?: number,
+  maxCharacters: number = 20000,
   verbosity: "compact" | "standard" | "full" = "standard",
 ): ExaScrapeRequest {
   return {
     url,
     text: {
-      ...(maxCharacters && { maxCharacters }),
+      maxCharacters,
       verbosity,
     },
   };
 }
 
 /**
- * Get summary scrape config
- * For quick overviews
+ * Get query-targeted highlights
  */
-export function getSummaryScrapeConfig(
+export function getQueryHighlightsScrapeConfig(
   url: string,
-  query?: string,
+  query: string,
+  maxCharacters: number = 2000,
 ): ExaScrapeRequest {
   return {
     url,
-    summary: query ? { query } : true,
+    highlights: {
+      query,
+      maxCharacters,
+    },
   };
 }
 
 /**
- * Get comprehensive scrape config
- * Includes text, highlights, and summary
+ * Get structured summary with JSON schema
+ */
+export function getStructuredSummaryScrapeConfig(
+  url: string,
+  query: string,
+  schema: SummaryOptions["schema"],
+): ExaScrapeRequest {
+  return {
+    url,
+    summary: {
+      query,
+      schema,
+    },
+  };
+}
+
+/**
+ * Get combined content config (highlights + text + summary)
+ * Use for comprehensive extraction
  */
 export function getComprehensiveScrapeConfig(
   url: string,
-  textChars: number = 15000,
-  highlightChars: number = 4000,
+  highlightQuery?: string,
 ): ExaScrapeRequest {
   return {
     url,
     text: {
-      maxCharacters: textChars,
+      maxCharacters: 20000,
       verbosity: "standard",
     },
-    highlights: {
-      maxCharacters: highlightChars,
-    },
+    highlights: highlightQuery
+      ? { query: highlightQuery, maxCharacters: 4000 }
+      : { maxCharacters: 4000 },
     summary: true,
   };
 }
 
 /**
- * Get real-time scrape config with livecrawl
- * Always fetches fresh content
+ * Get real-time scrape config (always livecrawl)
  */
-export function getLiveScrapeConfig(
+export function getRealTimeScrapeConfig(
   url: string,
-  includeText: boolean = true,
+  contentType: "text" | "highlights" | "both" = "highlights",
+  livecrawlTimeout: number = 12000,
 ): ExaScrapeRequest {
-  return {
+  const config: ExaScrapeRequest = {
     url,
-    livecrawl: true,
-    maxAgeHours: 0,
-    ...(includeText
-      ? { text: { maxCharacters: 15000 } }
-      : { highlights: { maxCharacters: 4000 } }),
+    maxAgeHours: 0, // Always livecrawl
+    livecrawlTimeout,
   };
+
+  if (contentType === "text" || contentType === "both") {
+    config.text = { maxCharacters: 15000, verbosity: "standard" };
+  }
+
+  if (contentType === "highlights" || contentType === "both") {
+    config.highlights = { maxCharacters: 4000 };
+  }
+
+  return config;
 }
 
 /**
- * Get multiple URL scrape config
+ * Get cached-only scrape config (maximum speed)
  */
-export function getMultiUrlScrapeConfig(
-  urls: string[],
-  contentType: "text" | "highlights" | "summary" | "all" = "highlights",
+export function getCachedScrapeConfig(
+  url: string,
+  contentType: "text" | "highlights" = "highlights",
 ): ExaScrapeRequest {
-  const config: ExaScrapeRequest = { urls };
+  const config: ExaScrapeRequest = {
+    url,
+    maxAgeHours: -1, // Never livecrawl, cache only
+  };
+
+  if (contentType === "text") {
+    config.text = { maxCharacters: 15000, verbosity: "standard" };
+  } else {
+    config.highlights = { maxCharacters: 4000 };
+  }
+
+  return config;
+}
+
+/**
+ * Get daily-fresh scrape config
+ */
+export function getDailyFreshScrapeConfig(
+  url: string,
+  contentType: "text" | "highlights" | "summary" = "highlights",
+): ExaScrapeRequest {
+  const config: ExaScrapeRequest = {
+    url,
+    maxAgeHours: 24,
+    livecrawlTimeout: 12000,
+  };
 
   switch (contentType) {
     case "text":
@@ -293,12 +345,142 @@ export function getMultiUrlScrapeConfig(
     case "summary":
       config.summary = true;
       break;
-    case "all":
-      config.text = { maxCharacters: 15000, verbosity: "standard" };
-      config.highlights = { maxCharacters: 4000 };
-      config.summary = true;
-      break;
   }
 
   return config;
+}
+
+/**
+ * Scrape documentation site with subpage crawling
+ */
+export function getDocsScrapeConfig(
+  baseUrl: string,
+  subpages: number = 15,
+  targetSections: string[] = ["api", "reference", "guide", "docs"],
+): ExaSubpageScrapeRequest {
+  return {
+    url: baseUrl,
+    subpages,
+    subpageTarget: targetSections,
+    maxAgeHours: 24,
+    livecrawlTimeout: 15000,
+    text: {
+      maxCharacters: 5000,
+      verbosity: "standard",
+    },
+  };
+}
+
+/**
+ * Scrape company website with subpage crawling
+ */
+export function getCompanyScrapeConfig(
+  companyUrl: string,
+  subpages: number = 8,
+  targetSections: string[] = ["about", "careers", "press", "blog", "team"],
+): ExaSubpageScrapeRequest {
+  return {
+    url: companyUrl,
+    subpages,
+    subpageTarget: targetSections,
+    summary: {
+      query: "Company overview, culture, team, and recent news",
+    },
+    highlights: {
+      maxCharacters: 4000,
+    },
+  };
+}
+
+/**
+ * Scrape research paper or article
+ */
+export function getResearchPaperScrapeConfig(
+  paperUrl: string,
+  extractionQuery?: string,
+): ExaScrapeRequest {
+  return {
+    url: paperUrl,
+    text: {
+      maxCharacters: 20000,
+      verbosity: "standard",
+    },
+    highlights: extractionQuery
+      ? { query: extractionQuery, maxCharacters: 3000 }
+      : { query: "methodology and main findings", maxCharacters: 3000 },
+    summary: {
+      query: "Summarize the paper's methodology, key findings, and conclusions",
+    },
+  };
+}
+
+/**
+ * Extract structured data from a page
+ */
+export function getStructuredExtractionConfig(
+  url: string,
+  extractionSchema: SummaryOptions["schema"],
+  extractionQuery: string = "Extract structured information from this page",
+): ExaScrapeRequest {
+  return {
+    url,
+    summary: {
+      query: extractionQuery,
+      schema: extractionSchema,
+    },
+  };
+}
+
+/**
+ * Helper to create company info extraction schema
+ */
+export function getCompanyInfoSchema(): SummaryOptions["schema"] {
+  return {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      industry: { type: "string" },
+      founded: { type: "number" },
+      headquarters: { type: "string" },
+      description: { type: "string" },
+      keyProducts: { type: "array" },
+    },
+    required: ["name", "industry"],
+  };
+}
+
+/**
+ * Helper to create person info extraction schema
+ */
+export function getPersonInfoSchema(): SummaryOptions["schema"] {
+  return {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      title: { type: "string" },
+      company: { type: "string" },
+      location: { type: "string" },
+      background: { type: "string" },
+      expertise: { type: "array" },
+    },
+    required: ["name"],
+  };
+}
+
+/**
+ * Helper to create article metadata extraction schema
+ */
+export function getArticleMetadataSchema(): SummaryOptions["schema"] {
+  return {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      author: { type: "string" },
+      publishDate: { type: "string" },
+      mainTopics: { type: "array" },
+      keyTakeaways: { type: "array" },
+      wordCount: { type: "number" },
+    },
+    required: ["title", "mainTopics"],
+  };
 }
