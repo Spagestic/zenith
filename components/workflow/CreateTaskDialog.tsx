@@ -11,7 +11,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -35,11 +34,7 @@ function statusVariant(
     | "failed",
 ) {
   if (status === "failed") return "destructive";
-  if (
-    status === "planned" ||
-    status === "prompted" ||
-    status === "rendered"
-  ) {
+  if (status === "planned" || status === "prompted" || status === "rendered") {
     return "secondary";
   }
   return "outline";
@@ -116,11 +111,16 @@ export function CreateTaskDialog({
 
         <form className="space-y-4" onSubmit={onSubmit}>
           <div className="space-y-2">
-            <Input
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="Topic or URL (e.g. https://example.com/news or climate summit)"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Topic or URL (e.g. https://example.com/news or climate summit)"
+              />
+              <Button type="submit" disabled={!canSubmit}>
+                {isSubmitting ? "Creating..." : "Create Task"}
+              </Button>
+            </div>
             {!user && (
               <p className="text-sm text-muted-foreground">
                 Sign in to create and run workflow tasks.
@@ -131,16 +131,19 @@ export function CreateTaskDialog({
               <p className="text-sm text-muted-foreground">{message}</p>
             )}
           </div>
-
-          <DialogFooter>
-            <Button type="submit" disabled={!canSubmit}>
-              {isSubmitting ? "Creating..." : "Create Task"}
-            </Button>
-          </DialogFooter>
         </form>
 
         <div className="space-y-2 border-t pt-4">
-          <p className="text-sm font-medium">Recent tasks</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Recent tasks</p>
+            {/* <Button
+              variant="link"
+              size="xs"
+              onClick={() => router.push("/tasks")}
+            >
+              View all
+            </Button> */}
+          </div>
           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
             {tasks?.length ? (
               tasks.map((task) => (
