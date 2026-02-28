@@ -72,6 +72,7 @@ function shortenNarrationForDuration(
 export const runTaskIngestion = action({
   args: {
     taskId: v.id("workflowTasks"),
+    autoContinue: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -92,6 +93,8 @@ export const runTaskIngestion = action({
     await ctx.runMutation(internal.workflowTasks.setTaskIngesting, {
       taskId: args.taskId,
     });
+
+    const autoContinue = args.autoContinue ?? true;
 
     try {
       let rawResults: unknown[] = [];
@@ -158,6 +161,13 @@ export const runTaskIngestion = action({
         sourceDocuments: normalized.sourceDocuments,
       });
 
+      if (autoContinue) {
+        await ctx.runAction(api.workflowTasks.generateStoryPlan, {
+          taskId: args.taskId,
+          autoContinue: true,
+        });
+      }
+
       return {
         status: "ingested",
         sourceCount: normalized.sourceDocuments.length,
@@ -177,6 +187,7 @@ export const runTaskIngestion = action({
 export const generateStoryPlan = action({
   args: {
     taskId: v.id("workflowTasks"),
+    autoContinue: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -200,6 +211,8 @@ export const generateStoryPlan = action({
     await ctx.runMutation(internal.workflowTasks.setTaskPlanning, {
       taskId: args.taskId,
     });
+
+    const autoContinue = args.autoContinue ?? true;
 
     try {
       const context = buildStorySourceContext(task.sourceDocuments);
@@ -242,6 +255,13 @@ ${context}`,
         storyTitle: derivedTitle,
       });
 
+      if (autoContinue) {
+        await ctx.runAction(api.workflowTasks.generatePromptPack, {
+          taskId: args.taskId,
+          autoContinue: true,
+        });
+      }
+
       return {
         status: "planned",
         sceneCount: storyPlan.scenes.length,
@@ -262,6 +282,7 @@ ${context}`,
 export const generatePromptPack = action({
   args: {
     taskId: v.id("workflowTasks"),
+    autoContinue: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -285,6 +306,8 @@ export const generatePromptPack = action({
     await ctx.runMutation(internal.workflowTasks.setTaskPrompting, {
       taskId: args.taskId,
     });
+
+    const autoContinue = args.autoContinue ?? true;
 
     try {
       const storyPlanJson = JSON.stringify(task.storyPlan);
@@ -374,6 +397,13 @@ ${response.text}`,
         scenePrompts,
       });
 
+      if (autoContinue) {
+        await ctx.runAction(api.workflowTasks.generateSceneImages, {
+          taskId: args.taskId,
+          autoContinue: true,
+        });
+      }
+
       return {
         status: "prompted",
         promptCount: scenePrompts.length,
@@ -397,6 +427,7 @@ export const generateSceneImages = action({
     taskId: v.id("workflowTasks"),
     model: v.optional(v.string()),
     aspectRatio: v.optional(v.string()),
+    autoContinue: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -423,6 +454,7 @@ export const generateSceneImages = action({
 
     const model = args.model ?? "image-01";
     const aspectRatio = args.aspectRatio ?? "16:9";
+    const autoContinue = args.autoContinue ?? true;
 
     try {
       const images: ImageAsset[] = [];
@@ -477,6 +509,13 @@ export const generateSceneImages = action({
         images,
       });
 
+      if (autoContinue) {
+        await ctx.runAction(api.workflowTasks.generateSceneVideos, {
+          taskId: args.taskId,
+          autoContinue: true,
+        });
+      }
+
       return {
         status: "rendered",
         imagePairCount: images.length,
@@ -503,6 +542,7 @@ export const generateSceneVideos = action({
     resolution: v.optional(v.string()),
     pollIntervalMs: v.optional(v.number()),
     maxPollAttempts: v.optional(v.number()),
+    autoContinue: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -532,6 +572,7 @@ export const generateSceneVideos = action({
     const resolution = args.resolution;
     const pollIntervalMs = args.pollIntervalMs ?? 3000;
     const maxPollAttempts = args.maxPollAttempts ?? 40;
+    const autoContinue = args.autoContinue ?? true;
 
     try {
       const videos: VideoAsset[] = [];
@@ -652,6 +693,13 @@ export const generateSceneVideos = action({
         videos,
       });
 
+      if (autoContinue) {
+        await ctx.runAction(api.workflowTasks.generateSceneTTS, {
+          taskId: args.taskId,
+          autoContinue: true,
+        });
+      }
+
       return {
         status: "rendered",
         videoCount: videos.length,
@@ -676,6 +724,7 @@ export const generateSceneTTS = action({
     model: v.optional(v.string()),
     voiceId: v.optional(v.string()),
     speed: v.optional(v.number()),
+    autoContinue: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -776,5 +825,143 @@ export const generateSceneTTS = action({
       });
       throw new Error(message);
     }
+  },
+});
+
+export const runWorkflowTask = action({
+  args: {
+    taskId: v.id("workflowTasks"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const task = await ctx.runQuery(internal.workflowTasks.getTaskInternal, {
+      taskId: args.taskId,
+    });
+    if (!task) {
+      throw new Error("Task not found");
+    }
+    if (task.userId !== userId) {
+      throw new Error("Not authorized to run this task");
+    }
+
+    if (task.sourceDocuments.length === 0) {
+      await ctx.runAction(api.workflowTasks.runTaskIngestion, {
+        taskId: args.taskId,
+        autoContinue: true,
+      });
+      return { status: "started", stage: "ingestion" as const };
+    }
+    if (!task.storyPlan) {
+      await ctx.runAction(api.workflowTasks.generateStoryPlan, {
+        taskId: args.taskId,
+        autoContinue: true,
+      });
+      return { status: "started", stage: "planning" as const };
+    }
+    if (!task.scenePrompts?.length) {
+      await ctx.runAction(api.workflowTasks.generatePromptPack, {
+        taskId: args.taskId,
+        autoContinue: true,
+      });
+      return { status: "started", stage: "prompting" as const };
+    }
+    if (!task.assets?.images?.length) {
+      await ctx.runAction(api.workflowTasks.generateSceneImages, {
+        taskId: args.taskId,
+        autoContinue: true,
+      });
+      return { status: "started", stage: "images" as const };
+    }
+    if (!task.assets?.videos?.length) {
+      await ctx.runAction(api.workflowTasks.generateSceneVideos, {
+        taskId: args.taskId,
+        autoContinue: true,
+      });
+      return { status: "started", stage: "videos" as const };
+    }
+    if (!task.assets?.tts?.length) {
+      await ctx.runAction(api.workflowTasks.generateSceneTTS, {
+        taskId: args.taskId,
+        autoContinue: true,
+      });
+      return { status: "started", stage: "tts" as const };
+    }
+
+    return { status: "complete", stage: "complete" as const };
+  },
+});
+
+export const resumeMyWorkflowTasks = action({
+  args: {
+    limit: v.optional(v.number()),
+    includeFailed: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const limit = Math.max(1, Math.min(args.limit ?? 10, 50));
+    const includeFailed = args.includeFailed ?? true;
+    const tasks = await ctx.runQuery(api.workflowTasks.listMyTasks, { limit: 50 });
+
+    const started: string[] = [];
+    const skipped: string[] = [];
+    const failed: Array<{ taskId: string; error: string }> = [];
+
+    for (const task of tasks) {
+      if (started.length >= limit) break;
+
+      const isComplete =
+        !!task.storyPlan &&
+        !!task.scenePrompts?.length &&
+        !!task.assets?.images?.length &&
+        !!task.assets?.videos?.length &&
+        !!task.assets?.tts?.length;
+      if (isComplete) {
+        skipped.push(task._id);
+        continue;
+      }
+      if (
+        !includeFailed &&
+        (task.status === "failed" || task.stage === "failed")
+      ) {
+        skipped.push(task._id);
+        continue;
+      }
+      if (
+        task.status === "ingesting" ||
+        task.status === "planning" ||
+        task.status === "prompting" ||
+        task.status === "rendering"
+      ) {
+        skipped.push(task._id);
+        continue;
+      }
+
+      try {
+        await ctx.runAction(api.workflowTasks.runWorkflowTask, { taskId: task._id });
+        started.push(task._id);
+      } catch (error) {
+        failed.push({
+          taskId: task._id,
+          error: error instanceof Error ? error.message : "Failed to resume task",
+        });
+      }
+    }
+
+    return {
+      startedCount: started.length,
+      skippedCount: skipped.length,
+      failedCount: failed.length,
+      startedTaskIds: started,
+      skippedTaskIds: skipped,
+      failed,
+    };
   },
 });

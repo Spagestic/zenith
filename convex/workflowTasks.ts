@@ -25,6 +25,8 @@ export {
 
 export {
   runTaskIngestion,
+  runWorkflowTask,
+  resumeMyWorkflowTasks,
   generateStoryPlan,
   generatePromptPack,
   generateSceneImages,

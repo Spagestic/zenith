@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -46,12 +46,7 @@ export default function TaskDetailsPage() {
     api.workflowTasks.getMyTaskById,
     taskId ? { taskId } : "skip",
   );
-  const runTaskIngestion = useAction(api.workflowTasks.runTaskIngestion);
-  const generateStoryPlan = useAction(api.workflowTasks.generateStoryPlan);
-  const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
-  const generateSceneImages = useAction(api.workflowTasks.generateSceneImages);
-  const generateSceneVideos = useAction(api.workflowTasks.generateSceneVideos);
-  const generateSceneTTS = useAction(api.workflowTasks.generateSceneTTS);
+  const runWorkflowTask = useAction(api.workflowTasks.runWorkflowTask);
   const updateStoryTitle = useMutation(api.workflowTasks.updateStoryTitle);
 
   const [isRunning, setIsRunning] = useState(false);
@@ -77,51 +72,30 @@ export default function TaskDetailsPage() {
   const baseTitle = task?.storyTitle?.trim() || "Kids News Story";
   const titleInputValue = titleDraft || baseTitle;
 
-  const runNextStage = async () => {
-    if (!task) return;
-    setIsRunning(true);
-    setMessage(null);
-    setError(null);
-    try {
-      // Retry based on available artifacts, not only status.
-      if (task.sourceDocuments.length === 0) {
-        await runTaskIngestion({ taskId: task._id });
-        setMessage("Ingestion started.");
-      } else if (!task.storyPlan) {
-        await generateStoryPlan({ taskId: task._id });
-        setMessage("Story plan generated.");
-      } else if (!task.scenePrompts?.length) {
-        await generatePromptPack({ taskId: task._id });
-        setMessage("Prompt pack generated.");
-      } else if (!task.assets?.images?.length) {
-        await generateSceneImages({ taskId: task._id });
-        setMessage("Scene images generated.");
-      } else if (!task.assets?.videos?.length) {
-        await generateSceneVideos({ taskId: task._id });
-        setMessage("Scene videos generated.");
-      } else if (!task.assets?.tts?.length) {
-        await generateSceneTTS({ taskId: task._id });
-        setMessage("Scene TTS generated.");
-      }
-    } catch (stageError) {
-      setError(
-        stageError instanceof Error ? stageError.message : "Task action failed",
-      );
-    } finally {
-      setIsRunning(false);
+  useEffect(() => {
+    if (!task || isRunning || task.status === "failed") return;
+    const isComplete =
+      !!task.storyPlan &&
+      !!task.scenePrompts?.length &&
+      !!task.assets?.images?.length &&
+      !!task.assets?.videos?.length &&
+      !!task.assets?.tts?.length;
+    if (isComplete || task.status === "ingesting" || task.status === "planning" || task.status === "prompting" || task.status === "rendering") {
+      return;
     }
-  };
 
-  const nextActionLabel = (() => {
-    if (!task) return null;
-    if (task.sourceDocuments.length === 0) return "Run Ingestion";
-    if (!task.storyPlan) return "Generate Story Plan";
-    if (!task.scenePrompts?.length) return "Generate Prompt Pack";
-    if (!task.assets?.images?.length) return "Generate Scene Images";
-    if (!task.assets?.videos?.length) return "Generate Scene Videos";
-    if (!task.assets?.tts?.length) return "Generate Scene TTS";
-    return null;
-  })();
+    setIsRunning(true);
+    setError(null);
+    setMessage(null);
+    void runWorkflowTask({ taskId: task._id })
+      .then(() => setMessage("Workflow started."))
+      .catch((stageError) =>
+        setError(
+          stageError instanceof Error ? stageError.message : "Task action failed",
+        ),
+      )
+      .finally(() => setIsRunning(false));
+  }, [isRunning, runWorkflowTask, task]);
 
   const onSaveTitle = async () => {
     if (!task) return;
@@ -179,14 +153,6 @@ export default function TaskDetailsPage() {
                     Progress: {task.progress ?? 0}%
                   </span>
                 </div>
-                {nextActionLabel && (
-                  <Button
-                    disabled={isRunning}
-                    onClick={() => void runNextStage()}
-                  >
-                    {isRunning ? "Working..." : nextActionLabel}
-                  </Button>
-                )}
               </div>
               <p className="text-sm">
                 <span className="font-medium">Input: </span>

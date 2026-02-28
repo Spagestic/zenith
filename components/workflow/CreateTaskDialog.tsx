@@ -3,7 +3,6 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,23 +56,10 @@ export function CreateTaskDialog({
     user ? { limit: 8 } : "skip",
   );
   const createTask = useMutation(api.workflowTasks.createTask);
-  const runTaskIngestion = useAction(api.workflowTasks.runTaskIngestion);
-  const generateStoryPlan = useAction(api.workflowTasks.generateStoryPlan);
-  const generatePromptPack = useAction(api.workflowTasks.generatePromptPack);
-  const generateSceneImages = useAction(api.workflowTasks.generateSceneImages);
-  const generateSceneVideos = useAction(api.workflowTasks.generateSceneVideos);
+  const runWorkflowTask = useAction(api.workflowTasks.runWorkflowTask);
 
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [planningTaskId, setPlanningTaskId] =
-    useState<Id<"workflowTasks"> | null>(null);
-  const [promptingTaskId, setPromptingTaskId] =
-    useState<Id<"workflowTasks"> | null>(null);
-  const [renderingTaskId, setRenderingTaskId] =
-    useState<Id<"workflowTasks"> | null>(null);
-  const [videoTaskId, setVideoTaskId] = useState<Id<"workflowTasks"> | null>(
-    null,
-  );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -97,17 +83,15 @@ export function CreateTaskDialog({
     try {
       const result = await createTask({ input: trimmedInput });
       setInput("");
-      setMessage("Task created. Ingestion started.");
+      setMessage("Task created. Workflow started.");
 
-      void runTaskIngestion({ taskId: result.taskId }).catch(
-        (ingestionError) => {
-          const ingestionMessage =
-            ingestionError instanceof Error
-              ? ingestionError.message
-              : "Ingestion failed";
-          setError(ingestionMessage);
-        },
-      );
+      void runWorkflowTask({ taskId: result.taskId }).catch((workflowError) => {
+        const workflowMessage =
+          workflowError instanceof Error
+            ? workflowError.message
+            : "Workflow start failed";
+        setError(workflowMessage);
+      });
     } catch (submitError) {
       const submitMessage =
         submitError instanceof Error
@@ -116,78 +100,6 @@ export function CreateTaskDialog({
       setError(submitMessage);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const onGenerateStoryPlan = async (taskId: Id<"workflowTasks">) => {
-    setPlanningTaskId(taskId);
-    setError(null);
-    setMessage(null);
-    try {
-      await generateStoryPlan({ taskId });
-      setMessage("Story plan generated.");
-    } catch (planningError) {
-      const planningMessage =
-        planningError instanceof Error
-          ? planningError.message
-          : "Story planning failed";
-      setError(planningMessage);
-    } finally {
-      setPlanningTaskId(null);
-    }
-  };
-
-  const onGeneratePromptPack = async (taskId: Id<"workflowTasks">) => {
-    setPromptingTaskId(taskId);
-    setError(null);
-    setMessage(null);
-    try {
-      await generatePromptPack({ taskId });
-      setMessage("Prompt pack generated.");
-    } catch (promptError) {
-      const promptMessage =
-        promptError instanceof Error
-          ? promptError.message
-          : "Prompt-pack generation failed";
-      setError(promptMessage);
-    } finally {
-      setPromptingTaskId(null);
-    }
-  };
-
-  const onGenerateSceneImages = async (taskId: Id<"workflowTasks">) => {
-    setRenderingTaskId(taskId);
-    setError(null);
-    setMessage(null);
-    try {
-      await generateSceneImages({ taskId });
-      setMessage("Scene images generated.");
-    } catch (imageError) {
-      const imageMessage =
-        imageError instanceof Error
-          ? imageError.message
-          : "Scene image generation failed";
-      setError(imageMessage);
-    } finally {
-      setRenderingTaskId(null);
-    }
-  };
-
-  const onGenerateSceneVideos = async (taskId: Id<"workflowTasks">) => {
-    setVideoTaskId(taskId);
-    setError(null);
-    setMessage(null);
-    try {
-      await generateSceneVideos({ taskId });
-      setMessage("Scene videos generated.");
-    } catch (videoError) {
-      const videoMessage =
-        videoError instanceof Error
-          ? videoError.message
-          : "Scene video generation failed";
-      setError(videoMessage);
-    } finally {
-      setVideoTaskId(null);
     }
   };
 
@@ -258,140 +170,6 @@ export function CreateTaskDialog({
                     </span>
                   </div>
                   <p className="truncate text-muted-foreground">{task.input}</p>
-                  {task.status === "ingested" && (
-                    <div className="pt-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={
-                          planningTaskId === task._id ||
-                          promptingTaskId === task._id
-                        }
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void onGenerateStoryPlan(task._id);
-                        }}
-                      >
-                        {planningTaskId === task._id
-                          ? "Planning..."
-                          : "Generate Story Plan"}
-                      </Button>
-                    </div>
-                  )}
-                  {task.status === "planned" && (
-                    <div className="pt-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={
-                          promptingTaskId === task._id ||
-                          planningTaskId === task._id
-                        }
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void onGeneratePromptPack(task._id);
-                        }}
-                      >
-                        {promptingTaskId === task._id
-                          ? "Generating Prompts..."
-                          : "Generate Prompt Pack"}
-                      </Button>
-                    </div>
-                  )}
-                  {task.status === "failed" &&
-                    !!task.storyPlan &&
-                    !task.scenePrompts?.length && (
-                      <div className="pt-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={
-                            promptingTaskId === task._id ||
-                            planningTaskId === task._id ||
-                            renderingTaskId === task._id ||
-                            videoTaskId === task._id
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void onGeneratePromptPack(task._id);
-                          }}
-                        >
-                          {promptingTaskId === task._id
-                            ? "Retrying Prompt Pack..."
-                            : "Retry Generate Prompt Pack"}
-                        </Button>
-                      </div>
-                    )}
-                  {task.status === "failed" &&
-                    !!task.scenePrompts?.length &&
-                    !task.assets?.images?.length && (
-                      <div className="pt-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={
-                            renderingTaskId === task._id ||
-                            promptingTaskId === task._id ||
-                            planningTaskId === task._id ||
-                            videoTaskId === task._id
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void onGenerateSceneImages(task._id);
-                          }}
-                        >
-                          {renderingTaskId === task._id
-                            ? "Retrying Images..."
-                            : "Retry Generate Scene Images"}
-                        </Button>
-                      </div>
-                    )}
-                  {task.status === "prompted" && (
-                    <div className="pt-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={
-                          renderingTaskId === task._id ||
-                          promptingTaskId === task._id ||
-                          planningTaskId === task._id ||
-                          videoTaskId === task._id
-                        }
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void onGenerateSceneImages(task._id);
-                        }}
-                      >
-                        {renderingTaskId === task._id
-                          ? "Generating Images..."
-                          : "Generate Scene Images"}
-                      </Button>
-                    </div>
-                  )}
-                  {(task.status === "rendered" || task.status === "failed") &&
-                    !!task.assets?.images?.length &&
-                    !task.assets?.videos?.length && (
-                      <div className="pt-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={
-                            videoTaskId === task._id ||
-                            renderingTaskId === task._id ||
-                            promptingTaskId === task._id ||
-                            planningTaskId === task._id
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void onGenerateSceneVideos(task._id);
-                          }}
-                        >
-                          {videoTaskId === task._id
-                            ? "Generating Videos..."
-                            : "Generate Scene Videos"}
-                        </Button>
-                      </div>
-                    )}
                 </div>
               ))
             ) : (
